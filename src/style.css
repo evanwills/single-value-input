@@ -69,10 +69,28 @@ button:focus-visible {
 }
 
 #app {
+  background-color: white;
+  color: #0a214d;
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+}
+
+/**
+ * Copied from Bootstrap 5.x CSS
+ */
+.visually-hidden,
+.visually-hidden-focusable:not(:focus):not(:focus-within) {
+  border: 0 !important;
+  clip: rect(0,0,0,0) !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  white-space: nowrap !important;
+  width: 1px !important;
 }
 
 @media (prefers-color-scheme: light) {
