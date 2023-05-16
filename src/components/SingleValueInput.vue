@@ -1,4 +1,3 @@
-
 <template>
   <li class="single-val-input">
     <span v-if="type === 'radio'" :id="fieldId" class="single-val-input__label">
@@ -9,7 +8,7 @@
       {{ label }}
       <span v-if="required === true" class="single-val-input__required">(required)</span>
     </label>
-    <div class="single-val-input__input-wrap">
+    <div :class="inputClass">
       <AccessibleSelect v-if="isSelect"
                         :field-id="fieldId"
                         :options="options"
@@ -21,6 +20,7 @@
                         :accesskey="accessKeyAttr"
                         :value="value"
                         :title="titleAttr"
+                        :helpID="describedBy"
                         v-on:change="selectChanged($event)"></AccessibleSelect>
       <textarea v-else-if="isTextarea"
                 :id="fieldId"
@@ -38,6 +38,7 @@
                 :title="titleAttr"
                 v-on:change="hasChanged($event)"
                 v-on:blur="hasChanged($event)"
+                :aria-describedby="describedBy"
                 class="single-val-input__input">{{ value }}</textarea>
       <input  v-else
               :type="inputType"
@@ -59,10 +60,13 @@
               :value="value"
               v-on:change="hasChanged($event)"
               v-on:blur="hasChanged($event)"
+              :aria-describedby="describedBy"
               class="single-val-input__input" />
-      <span v-if="showError === true" :id="getID('error')" ></span>
+      <span v-if="showError === true && this.errorMsg !== ''"
+            class="single-val-input__error"
+            :id="getID('error')" >{{ errorMsg }}</span>
     </div>
-    <div class="single-val-input__help" :id="getID('help')"></div>
+    <div v-if="helpTxt !== ''" class="single-val-input__help" :id="getID('help')">{{ helpTxt }}</div>
   </li>
 </template>
 
@@ -92,6 +96,8 @@ const inputAttibutes = {
   title: 'string',
 }
 
+const temporal = ['date', 'datetime-local', 'time'];
+
 export default {
   name: 'single-value-input',
 
@@ -109,6 +115,8 @@ export default {
     required: { type: Boolean, required: false, default: false, },
     tabindex: { type: Number, required: false, default: 0, },
     value: { required: false, default: '', },
+    errorMsg: { type: String, required: false, default: '' },
+    helpTxt: { type: String, required: false, default: '' },
   },
 
   components: { AccessibleSelect },
@@ -158,6 +166,37 @@ export default {
         ? this.attrs.inputmode
         : undefined;
     },
+    inputClass() {
+      console.group('inputClass()');
+
+      const noBorder = ['radio', 'range'];
+
+      const prefix = 'single-val-input__input-wrap';
+      console.log('prefix:', prefix);
+      console.log('temporal:', temporal);
+      console.log('showError:', this.showError);
+      console.log('type:', this.type);
+      let output = prefix;
+      console.log('output:', output);
+
+      if (temporal.indexOf(this.type) > -1) {
+        output += ` ${prefix}--auto`;
+      }
+      console.log('output:', output);
+
+      if (noBorder.indexOf(this.type) > -1) {
+        output += ` ${prefix}--no-border`;
+      }
+      console.log('output:', output);
+
+      if (this.showError === true) {
+        output += ` ${prefix}--invalid`
+      }
+      console.log('output:', output);
+
+      console.groupEnd();
+      return output;
+    },
     patternAttr() {
       return (typeof this.attrs.pattern !== 'undefined')
         ? this.attrs.pattern
@@ -188,40 +227,23 @@ export default {
         ? this.attrs.title
         : undefined;
     },
-    inputClass() {
-      const prefix = 'single-val-input__input';
+    describedBy() {
+      let output = '';
+      let sep = '';
 
-      return (this.showError === true)
-        ? `${prefix} ${prefix}--invalid`
-        : prefix
-    },
-
-    isValid(validity) {
-      console.group('isValid(element)');
-      console.log('validity:', validity);
-      console.log('validity:', validity);
-      console.log('validity.valueMissing:', validity.valueMissing);
-      console.log('validity.typeMismatch:', validity.typeMismatch);
-      console.log('validity.patternMismatch:', validity.patternMismatch);
-      console.log('validity.tooLong:', validity.tooLong);
-      console.log('validity.tooShort:', validity.tooShort);
-      console.log('validity.rangeUnderflow:', validity.rangeUnderflow);
-      console.log('validity.rangeOverflow:', validity.rangeOverflow);
-      console.log('validity.stepMismatch:', validity.stepMismatch);
-      console.log('validity.badInput:', validity.badInput);
-      console.log('validity.customError:', validity.customError);
-
-      const vKeys = Object.keys(validity);
-
-      for (let a = 0; a < vKeys.length; a += 1) {
-        if (validity[vKeys[a]] === true) {
-          console.groupEnd();
-          return false;
-        }
+      if (this.helpTxt !== '') {
+        output = this.getID('help');
+        sep = ' ';
       }
-      console.groupEnd();
-      return true;
-    },
+
+      if (this.showError === true) {
+        output += sep + this.getID('error');
+      }
+
+      return (output !== '')
+        ? output
+        : undefined;
+    }
   },
 
   methods: {
@@ -303,16 +325,16 @@ export default {
       this.attrs.step = 1;
     }
 
-    console.log(this.attributes);
+    console.log('this.attributes:', this.attributes);
     if (typeof this.attributes !== 'undefined') {
-      const notNum = ['date', 'time', 'datetime-local'];
       const tmpUserKeys = Object.keys(this.attributes);
+
       for (let a = 0; a < tmpUserKeys.length; a += 1) {
         const lowerKey = tmpUserKeys[a].toLowerCase();
         const key = tmpUserKeys[a];
 
         const attrType = typeof this.attributes[key];
-        if ((typeof inputAttibutes[lowerKey] !== 'undefined' && attrType === inputAttibutes[lowerKey]) || (notNum.indexOf(this.type) > -1 && (lowerKey === 'min' || lowerKey === 'max') && attrType === 'string')) {
+        if ((typeof inputAttibutes[lowerKey] !== 'undefined' && attrType === inputAttibutes[lowerKey]) || (temporal.indexOf(this.type) > -1 && (lowerKey === 'min' || lowerKey === 'max') && attrType === 'string')) {
           this.attrs[lowerKey] = this.attributes[key];
           if (this.type === 'date' || this.type === 'datetime-local') {
             const tmpDate = new Date(this.attributes[key]);
@@ -357,7 +379,6 @@ export default {
 }
 </script>
 
-
 <style lang="scss">
 @import '../assets/scss/config';
 
@@ -368,9 +389,45 @@ $border-rad: 0.3rem;
   padding: 0;
   font-family: Poppins, Arial, Helvetica, sans-serif;
   list-style-type: none;
+  text-align: left;
+
+  * {
+    box-sizing: border-box;
+  }
 
   &:nth-child(n + 2) {
     margin-top: 1rem;
+  }
+
+  &__input-wrap {
+    border: 0.05rem solid $tsf-field-borders;
+    border-radius: $border-rad;
+    display: inline-block;
+    width: 100%;
+
+    &:focus-within {
+      outline: 0.2rem dotted $tsf-bright-blue;
+      outline-offset: 0.2rem;
+    }
+
+    &--invalid {
+      border-color: $tsf-red;
+    }
+
+    &--auto {
+      width: auto;
+    }
+
+    &--no-border {
+      border: none;
+
+      .single-val-input {
+        &__error {
+          border-top-left-radius: $border-rad;
+          border-top-right-radius: $border-rad;
+        }
+      }
+    }
   }
 
   &__label {
@@ -385,22 +442,35 @@ $border-rad: 0.3rem;
     }
   }
 
+  &__error {
+    background-color: $tsf-red;
+    border: 0.05rem solid $tsf-red;
+    border-bottom-left-radius: $border-rad;
+    border-bottom-right-radius: $border-rad;
+    color: $white;
+    display: block;
+    text-align: left;
+    padding: 0.5rem 0.8rem;
+  }
+
+  &__help {
+    padding-top: 0.5rem;
+  }
+
   &__input {
     background-color: $white;
-    border: 0.05rem solid $tsf-field-borders;
+    border: none;
     border-radius: $border-rad;
     box-sizing: border-box;
     display: block;
     font-family: 'Courier New', Courier, monospace;
     width: 100%;
     color: $black;
-    padding: 0.5rem 0.6rem 0.4rem;
+    padding: 0.6rem 0.8rem 0.5rem;
     font-size: 1rem;
 
-    &--invalid {
-      border-color: $tsf-red;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
+    &:focus {
+      outline: none;
     }
 
     &:placeholder-shown {
@@ -409,6 +479,10 @@ $border-rad: 0.3rem;
 
     &[type=date], &[type=time], &[type=datetime-local] {
       width: auto;
+    }
+
+    &[type=range] {
+      padding: 0;
     }
   }
 

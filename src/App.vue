@@ -5,6 +5,7 @@
                       type="text"
                       required
                       error-msg="Bad user input"
+                      help-txt="This is some useful info about the field"
                       :attributes="txtInpAttr" />
     <SingleValueInput field-id="date-field"
                       label="Date (only) field label"
@@ -38,6 +39,7 @@
     <SingleValueInput field-id="radio-field"
                       label="Radio list group label"
                       type="radio"
+                      required
                       :options="multiOptions" />
   </ul>
 </template>

@@ -7,29 +7,27 @@
             :name="radioName"
             :checked="isSelected(option)"
             :required="required"
-            :tabindex="tabIndex"
-            :aria-describedby="getDescribedbyIDs"
+            :tabindex="tabIndexAttr"
+            :aria-describedby="helpId"
             v-on:change="hasChanged($event)" />
       <label :for="option.id" class="radio-group__label">{{ option.value }}</label>
     </li>
   </ul>
 
-  <span v-else>
-    <span :class="selectClass">
-      <select :id="fieldId"
-              :aria-describedby="getDescribedbyIDs"
-              :tabindex="tabIndex"
-              v-bind:required="required"
-              v-on:change="hasChanged($event)"
-              v-on:blur="blured($event)">
-        <option v-for="(option, i) of usableOptions"
-                :value="option.key"
-                :selected="isSelected(option)"
-                v-bind:key="i">
-          {{ option.value }}
-        </option>
-      </select>
-    </span>
+  <span v-else :class="selectClass">
+    <select :id="fieldId"
+            :aria-describedby="helpId"
+            :tabindex="tabIndexAttr"
+            v-bind:required="required"
+            v-on:change="hasChanged($event)"
+            v-on:blur="blured($event)">
+      <option v-for="(option, i) of usableOptions"
+              :value="option.key"
+              :selected="isSelected(option)"
+              v-bind:key="i">
+        {{ option.value }}
+      </option>
+    </select>
   </span>
 </template>
 
@@ -48,8 +46,7 @@ export default {
 
   props: {
     emptyText: { type: String, required: false, default: '' },
-    errorMsgId: { type: String, required: false, default: '' },
-    fieldHelpId: { type: String, required: false },
+    helpId: { type: String, required: false },
     fieldId: { type: String, required: true },
     invalid: { type: Boolean, required: false, default: false },
     options: { type: Array, required: true },
@@ -89,6 +86,12 @@ export default {
       return (this.showError === true)
         ? `${output} ${base}--error`
         : output;
+    },
+
+    tabIndexAttr() {
+      return (this.tabindex === -1)
+        ? -1
+        : undefined
     },
 
     errorID() {
@@ -225,11 +228,11 @@ export default {
   align-items: center;
   background-color: $white;
   // background-image: linear-gradient(to top, $grey, $white 33%);
-  border: 0.05rem solid $regular-grey;
+  border: none;
   border-radius: 0.3125rem;
   cursor: pointer;
   display: block;
-  margin-top: 0.5rem;
+  // margin-top: 0.5rem;
   max-width: 30rem;
   min-width: 10rem;
   padding: 0;
@@ -243,24 +246,6 @@ export default {
 
   &--required {
     border-color: $tsf-red;
-  }
-
-  &__error {
-    background-color: $tsf-red;
-    border-radius: 0.3125rem;
-    box-sizing: border-box;
-    font-family: Poppins, Arial, Helvetica, sans-serif;
-    color: $white;
-    display: block;
-    text-align: left;
-    padding: 1rem;
-    width: 100%;
-    margin-right: -0.2rem;
-
-    &--select {
-      border-top-left-radius: 0;
-      border-top-right-radius: 0;
-    }
   }
 
   &::before {
@@ -312,7 +297,6 @@ export default {
     line-height: 1.5rem;
     outline: none;
     padding: 1rem 4rem 1rem 1rem;
-    margin: -0.1rem 0 -0.1em 0;
     width: 100%;
 
     &::-ms-expand {
