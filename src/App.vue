@@ -1,16 +1,24 @@
 <template>
   <ul>
-    <SingleValueInput field-id="first-field"
-                      label="First field label"
+    <SingleValueInput field-id="text-field"
+                      label="Basic text field"
                       type="text"
                       required
                       error-msg="Bad user input"
-                      help-txt="This is some useful info about the field"
+                      help-txt="This is some useful info about 'First field'"
                       :attributes="txtInpAttr" />
+    <SingleValueInput field-id="number-field"
+                      label="Number field"
+                      type="number"
+                      required
+                      error-msg="Must be a number between 10 and 40"
+                      help-txt="Pick a number, any number"
+                      :attributes="numInpAttr" />
     <SingleValueInput field-id="date-field"
                       label="Date (only) field label"
                       type="date"
                       required
+                      error-msg="Please enter today's date"
                       :attributes="dateInpAttr" />
     <SingleValueInput field-id="bad-date-field"
                       label="Bad Date (only) field label"
@@ -25,22 +33,43 @@
                       label="Date-time field label"
                       type="datetime-local"
                       :attributes="dateTimeInpAttr" />
+    <SingleValueInput field-id="time-field"
+                      label="Time of day field"
+                      type="time"
+                      required
+                      :attributes="dateTimeInpAttr">
+      <template #error>
+        <p>This some funcky error message with a <a href="https://vuejs.org/guide/components/slots.html">link</a></p>
+      </template>
+      <template #help>
+        <p>Our office hours are between 8:30am and 5:30pm <a href="https://vuejs.org/guide/components/slots.html">link</a></p>
+      </template>
+    </SingleValueInput>
     <SingleValueInput field-id="range-field"
                       label="Range field label"
                       type="range" />
+    <SingleValueInput field-id="colour-field"
+                      label="Choose a colour"
+                      type="color" />
     <SingleValueInput field-id="textarea-field"
                       label="Textarea field label"
                       type="textarea"
-                      :attributes="textareaAttr" />
-    <SingleValueInput field-id="select-field"
-                      label="Select field label"
-                      type="select"
-                      :options="multiOptions" />
+                      :attributes="textareaAttr"
+                      required
+                      error-msg="Please tell us somethings" />
     <SingleValueInput field-id="radio-field"
                       label="Radio list group label"
+                      error-msg="Please choose an option"
                       type="radio"
                       required
                       :options="multiOptions" />
+    <SingleValueInput field-id="select-field"
+                      label="Select field label"
+                      empty-txt="-- please choose --"
+                      required
+                      type="select"
+                      :options="multiOptions"
+                      error-msg="Please choose an option" />
   </ul>
 </template>
 
@@ -48,17 +77,23 @@
 import SingleValueInput from './components/SingleValueInput.vue';
 
 const multiOptions = [
-  { key: '1', value: 'first option' },
-  { key: '2', value: 'Two is a cool number' },
-  { key: 3, value: 33 },
-  { key: '4', value: 'Quarter of the way to the end of the list' },
-  { key: 'five', value: 'Only joking 5 is the end' },
+  { value: '1', label: 'first option' },
+  { value: '2', label: 'Two is a cool number' },
+  { value: 3, label: 33 },
+  { value: '4', label: 'Quarter of the way to the end of the list. Well actually not really, we are more like 80% of the way to the end of the list' },
+  { value: 'five', label: 'Only joking 5 is the end' },
 ];
 
 
 const txtInpAttr = {
-  placeholder: 'Please enter some text',
+  placeholder: 'Enter text (non-alpha-numeric shows error)',
   pattern: '^[a-z0-9]+$'
+};
+const numInpAttr = {
+  placeholder: 'e.g. 25',
+  min: 10,
+  max: 40,
+  step: 1
 };
 const dateInpAttr = {
   min: '2023-05-10',

@@ -5,95 +5,110 @@
       <span v-if="required === true">(required)</span>
     </span>
     <label v-else :for="fieldId" class="single-val-input__label">
-      {{ label }}
-      <span v-if="required === true" class="single-val-input__required">(required)</span>
-    </label>
+      {{ label }}<!--
+      --><span v-if="required === true" class="single-val-input__required"> (required)</span><!--
+    --></label>
     <div :class="inputClass">
-      <AccessibleSelect v-if="isSelect"
+      <RadioSelectInput v-if="isSelect"
                         :field-id="fieldId"
+                        :access-key="accessKeyAttr"
+                        :empty-txt="emptyTxt"
+                        :help-ids="describedByIDs"
+                        :is-radio="isRadio"
+                        :is-required="required"
+                        :is-readonly="readonly"
+                        :is-disabled="disabled"
                         :options="options"
-                        :radio="isRadio"
-                        :required="required"
-                        :readonly="readonly"
-                        :disabled="disabled"
-                        :tabindex="tabindex"
-                        :accesskey="accessKeyAttr"
-                        :value="value"
+                        :tab-index="tabindex"
                         :title="titleAttr"
-                        :helpID="describedBy"
-                        v-on:change="selectChanged($event)"></AccessibleSelect>
+                        :value="value"
+                        v-on:invalid="selectInvalid($event)"
+                        v-on:change="selectChanged($event)"
+                        v-on:blur="selectChanged($event)" />
       <textarea v-else-if="isTextarea"
-                :id="fieldId"
-                :required="required"
-                :readonly="readonly"
-                :disabled="disabled"
-                :tabindex="tabindex"
+                class="single-val-input__input"
                 :accesskey="accessKeyAttr"
-                :minlength="minLengthAttr"
+                :id="fieldId"
+                :disabled="disabled"
                 :maxlength="maxLengthAttr"
+                :minlength="minLengthAttr"
                 :pattern="patternAttr"
                 :placeholder="placeholderAttr"
+                :readonly="readonly"
+                :required="required"
                 :rows="rowsAttr"
                 :spellcheck="spellCheckAttr"
+                :tabindex="tabindex"
                 :title="titleAttr"
+                :aria-describedby="describedByIDs"
                 v-on:change="hasChanged($event)"
-                v-on:blur="hasChanged($event)"
-                :aria-describedby="describedBy"
-                class="single-val-input__input">{{ value }}</textarea>
+                v-on:blur="hasChanged($event)">{{ currentValue }}</textarea>
       <input  v-else
-              :type="inputType"
-              :id="fieldId"
-              :required="required"
-              :readonly="readonly"
-              :disabled="disabled"
-              :tabindex="tabindex"
+              class="single-val-input__input"
               :accesskey="accessKeyAttr"
-              :inputmode="inputModeAttr"
-              :min="minAttr"
-              :minlength="minLengthAttr"
+              :disabled="disabled"
+              :id="fieldId"
               :max="maxAttr"
               :maxlength="maxLengthAttr"
+              :min="minAttr"
+              :minlength="minLengthAttr"
               :pattern="patternAttr"
               :placeholder="placeholderAttr"
               :step="stepAttr"
+              :tabindex="tabindex"
               :title="titleAttr"
-              :value="value"
+              :readonly="readonly"
+              :required="required"
+              :type="this.type"
+              :value="currentValue"
               v-on:change="hasChanged($event)"
               v-on:blur="hasChanged($event)"
-              :aria-describedby="describedBy"
-              class="single-val-input__input" />
-      <span v-if="showError === true && this.errorMsg !== ''"
+              :aria-describedby="describedByIDs" />
+      <div v-if="this.hasError === true && showError === true"
             class="single-val-input__error"
-            :id="getID('error')" >{{ errorMsg }}</span>
+            :id="getID('error')" >
+        <slot name="error">{{ errorMsg }}</slot>
+      </div>
     </div>
-    <div v-if="helpTxt !== ''" class="single-val-input__help" :id="getID('help')">{{ helpTxt }}</div>
+    <div v-if="hasHelp === true" class="single-val-input__help" :id="getID('help')">
+      <slot name="help">{{ helpTxt }}</slot>
+    </div>
   </li>
 </template>
 
 <script>
 // import { onUpdated, ref } from 'vue'
-import AccessibleSelect from './AccessibleSelect.vue'
+import { onUpdated } from 'vue';
+import RadioSelectInput from './RadioSelectInput.vue'
 
 const inputTypes = [
   'color', 'date', 'datetime-local', 'email', 'month', 'number',
   'radio', 'range', 'select', 'tel', 'text', 'textarea', 'time',
-  'url', 'week', 'year'
+  'url', 'week'
 ];
 
-const inputAttibutes = {
-  accesskey: 'string',
+const inputAttributes = {
   max: 'number',
   maxlength: 'number',
   min: 'number',
   minlength: 'number',
-  inputmode: 'string',
   pattern: 'string',
   placeholder: 'string',
   rows: 'number',
-  size: 'number',
   step: 'number',
   spellcheck: 'boolean',
-  title: 'string',
+}
+
+const hasLimit = (type) => {
+  const areLimited = ['date', 'datetime-local', 'month', 'number', 'range', 'time', 'week'];
+
+  return (areLimited.indexOf(type) > -1);
+}
+
+const hasCharLimit = (type) => {
+  const areLimited = ['email', 'tel', 'text', 'textarea', 'url'];
+
+  return (areLimited.indexOf(type) > -1);
 }
 
 const temporal = ['date', 'datetime-local', 'time'];
@@ -104,139 +119,418 @@ export default {
   emits: [ 'change', 'isvalid' ],
 
   props: {
-    fieldId: { type: String, required: true, },
-    label: { type: String, required: true, },
-    type: { type: String, required: true, },
-    accesskey: { type: String, required: false, },
+    /**
+     * Keyboard short cut key (using "alt + shift + [accesskey]") to
+     * allow user to go directly to the input field
+     *
+     * @property {string} accesskey
+     */
+    accesskey: { type: String, required: false, default: '' },
+
+    /**
+     * Standard HTML input/textarea specific attributes to augment
+     * the behaviour of the field (usually for validation purposes)
+     *
+     * Object properties that are used:
+     * * max - maximum value for `number`, `date`, `time`,
+     *             `datetime-local` & `range` type input fields
+     * * maxlength - maximum number of characters for `text` and
+     *             `textarea` fields
+     * * min   -   minimum value for `number`, `range`, `date`,
+     *             `time` & `datetime-local` type input fields
+     *             * for `number` & `range` fields this must be a
+     *               number
+     *             * for `date` fields, this must be an ISO-8601
+     *               formatted date string
+     *             * for `time` fields, this must be an ISO-8601
+     *               formatted time string
+     *             * for `datetime-local` fields, this must be an
+     *               ISO-8601 formatted datetime string
+     * * minlength - minimum number of characters for `text` and
+     *        `textarea` fields
+     * * pattern - JavaScript RegExp pattern for validating input
+     *             string
+     * * placeholder - Placeholder text to show when input is empty
+     * * rows  -   Number of lines hight to make a `textarea` field
+     * * step  -   Amount to increment a 'number' or `range` field
+     *             when user click an arrow key,
+     * * spellcheck - Whether or not to user the browser's spell
+     *             checker
+     *
+     * @property {Object} attributes
+     */
     attributes: { type: Object, required: false },
+
+    /**
+     * Whether or not the field is disabled
+     * (i.e. user is prevented from interacting with the field)
+     *
+     * @property {boolean} disabled
+     */
     disabled: { type: Boolean, required: false, default: false, },
-    options: { type: Array, required: false, default: [] },
-    readonly: { type: Boolean, required: false, default: false, },
-    required: { type: Boolean, required: false, default: false, },
-    tabindex: { type: Number, required: false, default: 0, },
-    value: { required: false, default: '', },
+
+    /**
+     * For select fields where no default is currently set, this
+     * provides an indicator that the user must choose an option
+     *
+     * (Is inserted as the first item in a select list)
+     *
+     * @property {string} emptyTxt
+     */
+    emptyTxt: { type: String, required: false, default: '' },
+
+    /**
+     * Error message to show the user when the value of the field is
+     * invalid
+     *
+     * > __Note:__ If you need to include HTML (e.g. a link) in the
+     * >           error message use the "error" slot instead.
+     *
+     * @property {string} errorMsg
+     */
     errorMsg: { type: String, required: false, default: '' },
+
+    /**
+     * ID of the field being rendered
+     *
+     * Used to link the field to its label, error message and help
+     * text
+     *
+     * > __Note:__ If fieldId is undefined or empty, an error will
+     *             be thrown
+     *
+     * @property {string} fieldId
+     */
+    fieldId: { type: String, required: true, },
+
+    /**
+     * Help text to show the user to make the purpose or
+     * requirements of the field clear
+     *
+     * > __Note:__ If you need to include HTML (e.g. a link) in the
+     * >           error message use the "help" slot instead.
+     *
+     * @property {string} errorMsg
+     */
     helpTxt: { type: String, required: false, default: '' },
+
+    /**
+     * Text to label the field
+     *
+     * This is an accessiblity requirement.
+     *
+     * > __Note:__ If label is undefined or empty, an error will
+     * >           be thrown
+     *
+     * @property {string} errorMsg
+     */
+    label: { type: String, required: true, },
+
+    /**
+     * List of options available in a <SELECT> or <INPUT type="radio">
+     * field
+     *
+     * > __Note:__ If `type` is "select" or "radio" and there are
+     * >           less than two options in the in the `options`
+     * >           property, an error will be thrown
+     *
+     * @property {<{key: string, value: string}>[]} options
+     */
+    options: { type: Array, required: false, default: [] },
+
+    /**
+     * Whether or not the field is readonly
+     * (i.e. user is prevented from interacting with the field)
+     *
+     * @property {boolean} readonly
+     */
+    readonly: { type: Boolean, required: false, default: false, },
+
+    /**
+     * Whether or not the field requres a non-empty value
+     *
+     * @property {boolean} required
+     */
+    required: { type: Boolean, required: false, default: false, },
+
+    /**
+     * When content is hidden, tabindex must be set to `-1` to
+     * prevent the user using the keyboard to tab into hidden inputs.
+     *
+     * > __Note:__ If tabindex is not `-1` it will not be rendered
+     * >           on the field, instead the browser's default
+     * >           tabbing order will be used
+     * @property {number} tabindex
+     */
+    tabindex: { type: Number, required: false, default: 0, },
+
+    /**
+     * Type of field to be rendered
+     *
+     * Allowed types are:
+     * * color
+     * * date
+     * * datetime-local
+     * * email
+     * * month
+     * * number
+     * * radio
+     * * range
+     * * select
+     * * tel
+     * * text
+     * * textarea
+     * * time
+     * * url
+     * * week
+     *
+     * > __Note:__ If the specified type is not one of the above,
+     * >           an error will be thrown
+     *
+     * @property {string} type
+     */
+    type: { type: String, required: true, },
+
+    /**
+     * Predefined value for the field.
+     *
+     * @property {string|number|undefined} value
+     */
+    value: { required: false, default: '', },
   },
 
-  components: { AccessibleSelect },
+  components: { RadioSelectInput },
+
+  data() {
+    return {
+      /**
+       * List of known and validated key/value pairs for HTML input
+       * field attriubtes
+       *
+       * @property {Object}
+       */
+      attrs: {},
+      /**
+       * The current value of the field
+       *
+       * @property {string}
+       */
+      currentValue: '',
+
+      /**
+       * Custom min & max values for validating temporal inputs
+       */
+      custom: {
+        min: null,
+        max: null,
+      },
+      /**
+       * Whether or not there is error text either as an attribute
+       * or a slot
+       *
+       * @property {boolean}
+       */
+      hasError: true,
+      /**
+       * Whether or not there is help text either as an attribute
+       * or a slot
+       *
+       * @property {boolean}
+       */
+      hasHelp: true,
+      /**
+       * Whether or not the current value is valid
+       *
+       * > __Note:__ Fields that are `required` must not be empty,
+       * >           otherwise they will show an error after the
+       * >           field has had focus
+       */
+      showError: false,
+    }
+  },
 
   computed: {
+    /**
+     * Test whether or not the rendered field is a select dropdown
+     * field or radio input group.
+     *
+     * @returns {boolean} TRUE if type is "select" or "radio"
+     *                    FALSE otherwise
+     */
     isSelect() {
       return (this.type === 'select' || this.type === 'radio');
     },
+    /**
+     * Test whether or not the rendered field is a textarea field
+     *
+     * @returns {boolean} TRUE if type is "textarea". FALSE otherwise
+     */
     isTextarea() {
       return (this.type === 'textarea');
     },
+    /**
+     * Test whether or not the rendered field is a radio input group
+     *
+     * @returns {boolean} TRUE if type is "radop". FALSE otherwise
+     */
     isRadio() {
       return (this.type === 'radio');
     },
-    inputType() {
-      return (this.type === 'year')
-        ? 'number'
-        : this.type;
-    },
+    /**
+     * Keyboard shortcut key for input field.
+     *
+     * If accesskey is undefined, the `accesskey` attribute won't be
+     * rendered on the element
+     *
+     * @returns {string|undefined}
+     */
     accessKeyAttr() {
-      return (typeof this.attrs.accesskey !== 'undefined')
-        ? this.attrs.accesskey
+      return (typeof this.accesskey !== 'undefined' || this.accesskey.trim() === '')
+        ? this.accesskey
         : undefined;
     },
+    /**
+     * Maximum numeric/temporal value allowed for valid input
+     *
+     * @returns {number|undefined}
+     */
     maxAttr() {
-      return (typeof this.attrs.max !== 'undefined')
+      return (hasLimit(this.type) && typeof this.attrs.max !== 'undefined')
         ? this.attrs.max
         : undefined;
     },
+
+    /**
+     * Maximum number of characters allowed for valid input
+     *
+     * @returns {number|undefined}
+     */
     maxLengthAttr() {
-      return (typeof this.attrs.maxlength !== 'undefined')
+      return (hasCharLimit(this.type) && typeof this.attrs.maxlength !== 'undefined')
         ? this.attrs.maxlength
         : undefined;
     },
+
+    /**
+     * Minimum numeric/temporal value allowed for valid input
+     *
+     * @returns {number|undefined}
+     */
     minAttr() {
-      return (typeof this.attrs.min !== 'undefined')
+      return (hasLimit(this.type) && typeof this.attrs.min !== 'undefined')
         ? this.attrs.min
         : undefined;
     },
+
+    /**
+     * Minimum number of characters allowed for valid input
+     *
+     * @returns {number|undefined}
+     */
     minLengthAttr() {
-      return (typeof this.attrs.minlength !== 'undefined')
+      return (hasCharLimit(this.type) && typeof this.attrs.minlength !== 'undefined')
         ? this.attrs.minlength
         : undefined;
     },
-    inputModeAttr() {
-      return (typeof this.attrs.inputmode !== 'undefined')
-        ? this.attrs.inputmode
-        : undefined;
-    },
+
+    /**
+     * List of class names to add to the input field
+     *
+     * @returns {string}
+     */
     inputClass() {
-      console.group('inputClass()');
-
       const noBorder = ['radio', 'range'];
-
       const prefix = 'single-val-input__input-wrap';
-      console.log('prefix:', prefix);
-      console.log('temporal:', temporal);
-      console.log('showError:', this.showError);
-      console.log('type:', this.type);
       let output = prefix;
-      console.log('output:', output);
 
       if (temporal.indexOf(this.type) > -1) {
         output += ` ${prefix}--auto`;
       }
-      console.log('output:', output);
 
       if (noBorder.indexOf(this.type) > -1) {
         output += ` ${prefix}--no-border`;
       }
-      console.log('output:', output);
 
       if (this.showError === true) {
         output += ` ${prefix}--invalid`
       }
-      console.log('output:', output);
 
-      console.groupEnd();
       return output;
     },
+
+    /**
+     * Validation pattern for input (JavaScript RegExp pattern)
+     *
+     * @returns {string|undefined}
+     */
     patternAttr() {
       return (typeof this.attrs.pattern !== 'undefined')
         ? this.attrs.pattern
         : undefined;
     },
+
+    /**
+     * Help text to render inside an empty input filed
+     *
+     * @returns {string|undefined}
+     */
     placeholderAttr() {
       return (typeof this.attrs.placeholder !== 'undefined')
         ? this.attrs.placeholder
         : undefined;
     },
+
+    /**
+     * Number of lines high a textarea field should be.
+     *
+     * @returns {number|undefined}
+     */
     rowsAttr() {
       return (typeof this.attrs.rows !== 'undefined')
         ? this.attrs.rows
         : undefined;
     },
+
+    /**
+     * Whether or not to use browser spell checker on user supplied
+     * content
+     *
+     * @returns {boolean|undefined}
+     */
     spellCheckAttr() {
       return (typeof this.attrs.spellcheck !== 'undefined')
         ? this.attrs.spellcheck
         : undefined;
     },
+
+    /**
+     * The amount to increment a numeric value when the user clicks
+     * an arrow key
+     *
+     * @returns {number|undefined}
+     */
     stepAttr() {
       return (typeof this.attrs.step !== 'undefined')
         ? this.attrs.step
         : undefined;
     },
-    titleAttr() {
-      return (typeof this.attrs.title !== 'undefined')
-        ? this.attrs.title
-        : undefined;
-    },
-    describedBy() {
+
+    /**
+     * IDs to link the input field with help text and error message
+     * blocks
+     *
+     * @returns {string|undefined}
+     */
+    describedByIDs() {
       let output = '';
       let sep = '';
 
-      if (this.helpTxt !== '') {
+      if (this.hasHelp !== '') {
         output = this.getID('help');
         sep = ' ';
       }
 
-      if (this.showError === true) {
+      if (this.hasError && this.showError === true) {
         output += sep + this.getID('error');
       }
 
@@ -247,25 +541,91 @@ export default {
   },
 
   methods: {
-    getID(input) {
-      return (typeof input === 'string' && input !== '')
-        ? `${this.fieldId}--${input}`
+    /**
+     * Get the custom ID (or `for` attribute) for a given element
+     *
+     * @param {string|undefined} suffix Custom suffix for the ID
+     *
+     * @returns {string} custom ID (or `for` attribute) value
+     */
+    getID(suffix) {
+      return (typeof suffix === 'string' && suffix !== '')
+        ? `${this.fieldId}--${suffix}`
         : this.fieldId;
     },
-    selectChanged(e) {
-      const field = e.target
-      this.showError = field.checkValidity();
-    },
-    hasChanged(e) {
-      this.showError = !e.target.checkValidity();
-    },
-    hasBlured(e) {
-      this.showError = !e.target.checkValidity();
+
+    /**
+     * Handle RadioSelectInput 'invalid' event
+     *
+     * @param {boolean} isInvalid Whether or not the RadioSelectInput
+     *                            is currently in an invalid state
+     */
+    selectInvalid(isInvalid) {
+      this.showError = isInvalid;
     },
 
+    /**
+     * Handle  of an RadioSelectInput component `change` or `blur`
+     * event
+     *
+     * @param {Event} e An event emitted by <SELECT> or
+     *                  <input type="radio"> element within an
+     *                  RadioSelectInput component
+     */
+    selectChanged(e) {
+      if (this.showError === false) {
+        this.$emit('change', e);
+      }
+    },
+
+    /**
+     * Handle `change` events emitted by <INPUT> or <TEXTAREA>
+     * elements
+     *
+     * @param {Event} e An event emitted by a change event from an
+     *                  <INPUT> or <TEXTAREA> element rendered
+     *                  directly within this component
+     */
+    hasChanged(e) {
+      this.showError = !e.target.checkValidity();
+
+      this.currentValue = e.target.value;
+
+      if (this.showError === false) {
+        this.$emit('change', e);
+      }
+    },
+
+    /**
+     * Handle `blur` events emitted by <INPUT> or <TEXTAREA> elements
+     *
+     * @param {Event} e An event emitted by a change event from an
+     *                  <INPUT> or <TEXTAREA> element rendered
+     *                  directly within this component
+     */
+    hasBlured(e) {
+      this.showError = !e.target.checkValidity();
+      if (this.showError === false) {
+        this.$emit('change', e);
+      }
+    },
+
+    /**
+     * Convert an ISO-8601 time string in the number of seconds
+     * after midnight.
+     *
+     * Used for easy comparison of current value with min/max values
+     * when validating time
+     *
+     * @param {string} input ISO-8601 Times tring
+     *
+     * @returns {number|false} Time as seconds after midnight, if
+     *                         input is valid. FALSE otherwise.
+     */
     getTimeAsSeconds(input) {
       const regex = /^([01][0-9]|2[[0-3]):([0-5][0-9])(?::([0-5][0-9]))(\.[0-9]{1,10})?$/;
-      const matches = input[key].match(regex);
+      const matches = input.match(regex);
+
       if (matches !== null) {
         let output = (matches[1] * 3600) + (matches[2] * 60);
 
@@ -281,24 +641,24 @@ export default {
         return false;
       }
     },
-  },
 
-  data() {
-    return {
-      currentValue: '',
-      originalValue: '',
-      attrs: {},
-      showError: false,
-      custom: {
-        min: null,
-        max: null,
-      },
-    }
+    /**
+     * Check whether there's some content to render for a given text block
+     *
+     * @param {string} slotName Name of the slot to be checked
+     * @param {string} propName Name of the component property/attribute
+     *                          to be checked
+     *
+     * @returns {boolean}
+     */
+    notEmpty(slotName, propName) {
+      return (!!this.$slots[slotName] || (typeof this[propName] === 'string' && this[propName].trim() !== ''))
+    },
   },
 
   beforeMount() {
-    console.group('beforeMount()');
     if (typeof this.label !== 'string' || this.label.trim() === '') {
+      // For accessibility reasons we MUST have a non-empty label
       throw new Error(
         '<single-value-input> component requires label attribute ' +
         'to be set and a non-empty string'
@@ -306,6 +666,8 @@ export default {
     }
 
     if (inputTypes.indexOf(this.type) === -1) {
+      // There's no point in rendering something that shouldn't be
+      // used here
       throw new Error(
         '<single-value-input> component requires type attribute ' +
         'to be a valid (non-button) HTML input "type" value ' +
@@ -314,29 +676,48 @@ export default {
     }
 
     if (this.type === 'select' || this.type === 'radio') {
+      // Make sure there's at least two options to render in
+      // select/radio input
       if (!Array.isArray(this.options) || this.options.length < 2) {
-        throw new Error
+        throw new Error('Select & radio fields require at least two options');
       }
     }
 
-    if (this.type === 'year') {
-      this.attrs.min = 1900;
-      this.attrs.max = 2100;
-      this.attrs.step = 1;
-    }
+    // Make sure we have a default current value
+    this.currentValue = (typeof this.value !== 'undefined')
+      ? this.value
+      : '';
 
-    console.log('this.attributes:', this.attributes);
+    // Do we have an error message to show the user?
+    this.hasError = this.notEmpty('error', 'errorMsg');
+
+    // Do we have a help text block to show the user?
+    this.hasHelp = this.notEmpty('help', 'helpTxt');
+
+    // Validate user supplied attributes
     if (typeof this.attributes !== 'undefined') {
+      /**
+       * List of attribute keys user has supplied
+       *
+       * @var {string[]}
+       */
       const tmpUserKeys = Object.keys(this.attributes);
 
       for (let a = 0; a < tmpUserKeys.length; a += 1) {
+        // normalise the keys so they are more likely to match
         const lowerKey = tmpUserKeys[a].toLowerCase();
         const key = tmpUserKeys[a];
-
         const attrType = typeof this.attributes[key];
-        if ((typeof inputAttibutes[lowerKey] !== 'undefined' && attrType === inputAttibutes[lowerKey]) || (temporal.indexOf(this.type) > -1 && (lowerKey === 'min' || lowerKey === 'max') && attrType === 'string')) {
+
+        if ((typeof inputAttributes[lowerKey] !== 'undefined' && attrType === inputAttributes[lowerKey])
+            || (temporal.indexOf(this.type) > -1 && (lowerKey === 'min' || lowerKey === 'max') && attrType === 'string')
+        ) {
+          // This something we want. Add it to the list of
+          // attributes we can use
           this.attrs[lowerKey] = this.attributes[key];
+
           if (this.type === 'date' || this.type === 'datetime-local') {
+            // Make sure date & datetime min/max are valid
             const tmpDate = new Date(this.attributes[key]);
 
             if (tmpDate.toString() === 'Invalid Date') {
@@ -347,7 +728,9 @@ export default {
               this.custom[lowerKey] = tmpDate;
             }
           } else if (this.type === 'time') {
-            const tmpTime = this.getTimeAsSeconds(this.attributes[key])
+            // make sure time min/max value is valid
+            const tmpTime = this.getTimeAsSeconds(this.attributes[key]);
+
             if (tmpTime !== false) {
               this.custom[lowerKey] = tmpTime;
             } else {
@@ -359,23 +742,7 @@ export default {
         }
       }
     }
-
-    console.log('this.attrs:', this.attrs);
-
-    console.groupEnd();
   },
-
-  mounted() {
-
-  },
-
-  unmounted() {
-
-  },
-
-  // onUpdated() {
-
-  // },
 }
 </script>
 
@@ -412,6 +779,10 @@ $border-rad: 0.3rem;
 
     &--invalid {
       border-color: $tsf-red;
+
+      > ul {
+        margin-bottom: 0.5rem !important;
+      }
     }
 
     &--auto {
@@ -436,6 +807,7 @@ $border-rad: 0.3rem;
     padding: 0.5rem 0;
     text-align: left;
     text-align: start;
+    white-space: normal;
 
     &::after {
       content: ':';
@@ -451,10 +823,30 @@ $border-rad: 0.3rem;
     display: block;
     text-align: left;
     padding: 0.5rem 0.8rem;
+
+    > :first-child {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
   }
 
   &__help {
     padding-top: 0.5rem;
+
+    > :first-child {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
   }
 
   &__input {

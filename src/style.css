@@ -71,10 +71,15 @@ button:focus-visible {
 #app {
   background-color: white;
   color: #0a214d;
-  max-width: 1280px;
+  max-width: 48rem;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+}
+
+#app > ul {
+  margin: 0;
+  padding: 0;
 }
 
 /**
