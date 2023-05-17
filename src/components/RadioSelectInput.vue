@@ -79,7 +79,8 @@ const normaliseOptions = (options) => options.map((item) => {
 
     if (vProp === '' || lProp === '') {
       throw new Error(
-        `Could not determine either the \`value\` or \`label\` property of option: "${item.toString()}"`
+        'Could not determine either the `value` or `label` '
+        + `property of option: "${item.toString()}"`,
       );
     }
 
@@ -273,13 +274,13 @@ export default {
 
       return (this.currentValue === '')
         ? `${base} ${base}--empty`
-        : base
+        : base;
     },
 
     tabIndexAttr() {
       return (this.tabindex === -1)
         ? -1
-        : undefined
+        : undefined;
     },
 
     errorID() {
@@ -327,7 +328,7 @@ export default {
         }
       }
 
-      this.invalid = ((this.required === true && this.currentValue === '') || ok === false)
+      this.invalid = ((this.required === true && this.currentValue === '') || ok === false);
 
       this.$emit('invalid', this.invalid);
       this.$emit('change', e);

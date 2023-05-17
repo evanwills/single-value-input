@@ -28,8 +28,9 @@
       <textarea v-else-if="isTextarea"
                 class="single-val-input__input"
                 :accesskey="accessKeyAttr"
-                :id="fieldId"
+                :aria-describedby="describedByIDs"
                 :disabled="disabled"
+                :id="fieldId"
                 :maxlength="maxLengthAttr"
                 :minlength="minLengthAttr"
                 :pattern="patternAttr"
@@ -40,9 +41,9 @@
                 :spellcheck="spellCheckAttr"
                 :tabindex="tabindex"
                 :title="titleAttr"
-                :aria-describedby="describedByIDs"
+                v-model="currentValue"
                 v-on:change="hasChanged($event)"
-                v-on:blur="hasChanged($event)">{{ currentValue }}</textarea>
+                v-on:blur="hasChanged($event)"></textarea>
       <input  v-else
               class="single-val-input__input"
               :accesskey="accessKeyAttr"
@@ -60,7 +61,7 @@
               :readonly="readonly"
               :required="required"
               :type="this.type"
-              :value="currentValue"
+              v-model="currentValue"
               v-on:change="hasChanged($event)"
               v-on:blur="hasChanged($event)"
               :aria-describedby="describedByIDs" />
@@ -77,14 +78,12 @@
 </template>
 
 <script>
-// import { onUpdated, ref } from 'vue'
-import { onUpdated } from 'vue';
-import RadioSelectInput from './RadioSelectInput.vue'
+import RadioSelectInput from './RadioSelectInput.vue';
 
 const inputTypes = [
   'color', 'date', 'datetime-local', 'email', 'month', 'number',
   'radio', 'range', 'select', 'tel', 'text', 'textarea', 'time',
-  'url', 'week'
+  'url', 'week',
 ];
 
 const inputAttributes = {
@@ -97,26 +96,26 @@ const inputAttributes = {
   rows: 'number',
   step: 'number',
   spellcheck: 'boolean',
-}
+};
 
 const hasLimit = (type) => {
   const areLimited = ['date', 'datetime-local', 'month', 'number', 'range', 'time', 'week'];
 
   return (areLimited.indexOf(type) > -1);
-}
+};
 
 const hasCharLimit = (type) => {
   const areLimited = ['email', 'tel', 'text', 'textarea', 'url'];
 
   return (areLimited.indexOf(type) > -1);
-}
+};
 
 const temporal = ['date', 'datetime-local', 'time'];
 
 export default {
   name: 'single-value-input',
 
-  emits: [ 'change', 'isvalid' ],
+  emits: ['change', 'isvalid'],
 
   props: {
     /**
@@ -167,7 +166,7 @@ export default {
      *
      * @property {boolean} disabled
      */
-    disabled: { type: Boolean, required: false, default: false, },
+    disabled: { type: Boolean, required: false, default: false },
 
     /**
      * For select fields where no default is currently set, this
@@ -201,7 +200,7 @@ export default {
      *
      * @property {string} fieldId
      */
-    fieldId: { type: String, required: true, },
+    fieldId: { type: String, required: true },
 
     /**
      * Help text to show the user to make the purpose or
@@ -224,7 +223,7 @@ export default {
      *
      * @property {string} errorMsg
      */
-    label: { type: String, required: true, },
+    label: { type: String, required: true },
 
     /**
      * List of options available in a <SELECT> or <INPUT type="radio">
@@ -236,7 +235,7 @@ export default {
      *
      * @property {<{key: string, value: string}>[]} options
      */
-    options: { type: Array, required: false, default: [] },
+    options: { type: Array, required: false },
 
     /**
      * Whether or not the field is readonly
@@ -244,14 +243,14 @@ export default {
      *
      * @property {boolean} readonly
      */
-    readonly: { type: Boolean, required: false, default: false, },
+    readonly: { type: Boolean, required: false, default: false },
 
     /**
      * Whether or not the field requres a non-empty value
      *
      * @property {boolean} required
      */
-    required: { type: Boolean, required: false, default: false, },
+    required: { type: Boolean, required: false, default: false },
 
     /**
      * When content is hidden, tabindex must be set to `-1` to
@@ -262,7 +261,7 @@ export default {
      * >           tabbing order will be used
      * @property {number} tabindex
      */
-    tabindex: { type: Number, required: false, default: 0, },
+    tabindex: { type: Number, required: false, default: 0 },
 
     /**
      * Type of field to be rendered
@@ -289,14 +288,14 @@ export default {
      *
      * @property {string} type
      */
-    type: { type: String, required: true, },
+    type: { type: String, required: true },
 
     /**
      * Predefined value for the field.
      *
      * @property {string|number|undefined} value
      */
-    value: { required: false, default: '', },
+    value: { required: false, default: '' },
   },
 
   components: { RadioSelectInput },
@@ -346,7 +345,7 @@ export default {
        * >           field has had focus
        */
       showError: false,
-    }
+    };
   },
 
   computed: {
@@ -452,7 +451,7 @@ export default {
       }
 
       if (this.showError === true) {
-        output += ` ${prefix}--invalid`
+        output += ` ${prefix}--invalid`;
       }
 
       return output;
@@ -537,7 +536,7 @@ export default {
       return (output !== '')
         ? output
         : undefined;
-    }
+    },
   },
 
   methods: {
@@ -629,17 +628,17 @@ export default {
       if (matches !== null) {
         let output = (matches[1] * 3600) + (matches[2] * 60);
 
-        if (typeof matches[3] !== undefined) {
+        if (typeof matches[3] !== 'undefined') {
           output += matches[3];
         }
-        if (typeof matches[4] !== undefined) {
+        if (typeof matches[4] !== 'undefined') {
           output += matches[4];
         }
 
         return output;
-      } else {
-        return false;
       }
+
+      return false;
     },
 
     /**
@@ -652,7 +651,8 @@ export default {
      * @returns {boolean}
      */
     notEmpty(slotName, propName) {
-      return (!!this.$slots[slotName] || (typeof this[propName] === 'string' && this[propName].trim() !== ''))
+      return (!!this.$slots[slotName]
+        || (typeof this[propName] === 'string' && this[propName].trim() !== ''));
     },
   },
 
@@ -660,8 +660,8 @@ export default {
     if (typeof this.label !== 'string' || this.label.trim() === '') {
       // For accessibility reasons we MUST have a non-empty label
       throw new Error(
-        '<single-value-input> component requires label attribute ' +
-        'to be set and a non-empty string'
+        '<single-value-input> component requires label attribute '
+        + 'to be set and a non-empty string',
       );
     }
 
@@ -669,9 +669,9 @@ export default {
       // There's no point in rendering something that shouldn't be
       // used here
       throw new Error(
-        '<single-value-input> component requires type attribute ' +
-        'to be a valid (non-button) HTML input "type" value ' +
-        '(excluding "file" & "checkbox" types)'
+        '<single-value-input> component requires type attribute '
+        + 'to be a valid (non-button) HTML input "type" value '
+        + '(excluding "file" & "checkbox" types)',
       );
     }
 
@@ -722,7 +722,8 @@ export default {
 
             if (tmpDate.toString() === 'Invalid Date') {
               console.warn(
-                `input#${this.fieldId} type: \`${this.type}\`, attribute: \`${key}\` ("${this.attributes[key]}") is invalid!`
+                `input#${this.fieldId} type: \`${this.type}\`, `
+                + `attribute: \`${key}\` ("${this.attributes[key]}") is invalid!`,
               );
             } else {
               this.custom[lowerKey] = tmpDate;
@@ -735,7 +736,8 @@ export default {
               this.custom[lowerKey] = tmpTime;
             } else {
               console.warn(
-                `input#${this.fieldId} type: \`time\`, attribute: \`${key}\` ("${this.attributes[key]}") is invalid!`
+                `input#${this.fieldId} type: \`time\`, `
+                + `attribute: \`${key}\` ("${this.attributes[key]}") is invalid!`,
               );
             }
           }
@@ -743,7 +745,7 @@ export default {
       }
     }
   },
-}
+};
 </script>
 
 <style lang="scss">
