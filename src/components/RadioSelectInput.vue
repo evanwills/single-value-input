@@ -46,58 +46,80 @@
  *
  * @returns {Object[]}
  */
-const normaliseOptions = (options) => options.map((item) => {
-  const t = typeof item;
-  let _val = '';
-  let _label = '';
-  let vProp = '';
-  let lProp = '';
+const normaliseOptions = (options) => {
+  let _options = [];
+  console.group('normaliseOptions()');
+  console.log('options:', options);
 
-  if (t === 'string' || t === 'number') {
-    _val = item;
-    _label = _val;
+  if (typeof options === 'object') {
+    const output = [];
+    const keys = Object.keys(options);
+
+    for (let a = 0; a < keys.length; a += 1) {
+      const key = keys[a];
+      output.push({value: key, label: options[key]});
+    }
+
+    _options = output;
   } else {
-    if (typeof item.key !== 'undefined') {
-      vProp = 'key';
+    _options = [...options];
+  }
+  console.log('_options:', _options);
+  console.groupEnd();
 
-      if (typeof item.value !== 'undefined') {
-        lProp = 'value';
-      }
-    } else if (typeof item.Value !== 'undefined') {
-      vProp = 'Value';
+  return _options.map((item) => {
+    const t = typeof item;
+    let _val = '';
+    let _label = '';
+    let vProp = '';
+    let lProp = '';
 
-      if (typeof item.Key !== 'undefined') {
-        lProp = 'Key';
-      }
-    } else if (typeof item.label !== 'undefined') {
-      lProp = 'label';
+    if (t === 'string' || t === 'number') {
+      _val = item;
+      _label = _val;
+    } else {
+      if (typeof item.key !== 'undefined') {
+        vProp = 'key';
 
-      if (typeof item.value !== 'undefined') {
-        vProp = 'value';
+        if (typeof item.value !== 'undefined') {
+          lProp = 'value';
+        }
+      } else if (typeof item.Value !== 'undefined') {
+        vProp = 'Value';
+
+        if (typeof item.Key !== 'undefined') {
+          lProp = 'Key';
+        }
+      } else if (typeof item.label !== 'undefined') {
+        lProp = 'label';
+
+        if (typeof item.value !== 'undefined') {
+          vProp = 'value';
+        }
       }
+
+      if (vProp === '' || lProp === '') {
+        throw new Error(
+          'Could not determine either the `value` or `label` '
+          + `property of option: "${item.toString()}"`,
+        );
+      }
+
+      _val = item[vProp];
+      _label = item[lProp];
     }
 
-    if (vProp === '' || lProp === '') {
-      throw new Error(
-        'Could not determine either the `value` or `label` '
-        + `property of option: "${item.toString()}"`,
-      );
+    if (typeof _val !== 'string') {
+      _val = _val.toString();
     }
 
-    _val = item[vProp];
-    _label = item[lProp];
-  }
+    if (typeof _label !== 'string') {
+      _val = _label.toString();
+    }
 
-  if (typeof _val !== 'string') {
-    _val = _val.toString();
-  }
-
-  if (typeof _label !== 'string') {
-    _val = _label.toString();
-  }
-
-  return { value: _val, label: _label };
-});
+    return { value: _val, label: _label };
+  });
+};
 
 /**
  * Add an ID string for each item in the array.
@@ -192,6 +214,14 @@ export default {
     isReadonly: { type: Boolean, required: false, default: false },
 
     /**
+     * Whether or not to show the empty value if the default value
+     * is non-empty
+     *
+     * @property {boolean} noNonEmpty
+     */
+    noNonEmpty: { type: Boolean, required: false, default: false },
+
+    /**
      * List of options available in a <SELECT> or <INPUT type="radio">
      * field
      *
@@ -243,6 +273,7 @@ export default {
       required: false,
       disabled: false,
       readonly: false,
+      radio: false,
     };
   },
 
@@ -347,19 +378,6 @@ export default {
   beforeMount() {
     // console.group('AccessibleSelect.beforeMount()');
 
-    // Make sure options are useable
-    let options = normaliseOptions(this.options);
-
-    // Add empty option if text for one has been specified
-    options = (typeof this.emptyTxt !== 'undefined' && this.emptyTxt !== '')
-      ? [{ value: '', label: this.emptyTxt }, ...options]
-      : options;
-
-    // Give each radio option a unique ID
-    this.usableOptions = (this.isRadio === true)
-      ? options.map(setOptionIDs(this.fieldId))
-      : options;
-
     // Get the data type of the supplied "selected" value
     switch (typeof this.value) {
       case 'string':
@@ -370,10 +388,39 @@ export default {
         break;
       default:
         this.currentValue = '';
+
+    // Check if
+    const noNonEmpty = isBoolTrue(this.noNonEmpty);
+    this.radio = isBoolTrue(this.isRadio)
+
+    // Make sure options are useable
+    let options = normaliseOptions(this.options);
+
+    console.group('beforeMount()');
+    console.log('this.options:', this.options);
+    console.log('options:', options);
+    console.log('this.radio:', this.radio);
+    console.log('noNonEmpty:', noNonEmpty);
+
+    // Add empty option if text for one has been specified
+    // options = (this.radio === false && typeof this.emptyTxt === 'string' && this.emptyTxt !== '' && (noNonEmpty === false || this.currentValue === ''))
+    options = (this.radio === false && typeof this.emptyTxt === 'string' && this.emptyTxt !== '')
+      ? [{ value: '', label: this.emptyTxt }, ...options]
+      : options;
+
+    console.log('options:', options);
+
+    // Give each radio option a unique ID
+    this.usableOptions = (this.radio === true)
+      ? options.map(setOptionIDs(this.fieldId))
+      : options;
     }
 
+    console.log('this.usableOptions:', this.usableOptions);
+    console.groupEnd();
+
     // Get the string value for the selected item.
-    this.valueMode = (typeof this.radio === 'boolean' && this.radio === true)
+    this.valueMode = (this.radio === true)
       ? 'checked'
       : 'selected';
 

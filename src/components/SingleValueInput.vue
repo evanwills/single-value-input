@@ -226,6 +226,14 @@ export default {
     label: { type: String, required: true },
 
     /**
+     * Whether or not to show the empty value if the default value
+     * is non-empty
+     *
+     * @property {boolean} noNonEmpty
+     */
+    noNonEmpty: { type: Boolean, required: false, default: false },
+
+    /**
      * List of options available in a <SELECT> or <INPUT type="radio">
      * field
      *
