@@ -19,8 +19,7 @@
                         :is-readonly="readonly"
                         :is-disabled="disabled"
                         :options="options"
-                        :tab-index="tabindex"
-                        :title="titleAttr"
+                        :tab-index="tabindexAttr"
                         :value="value"
                         v-on:invalid="selectInvalid($event)"
                         v-on:change="selectChanged($event)"
@@ -39,8 +38,7 @@
                 :required="required"
                 :rows="rowsAttr"
                 :spellcheck="spellCheckAttr"
-                :tabindex="tabindex"
-                :title="titleAttr"
+                :tabindex="tabindexAttr"
                 v-model="currentValue"
                 v-on:change="hasChanged($event)"
                 v-on:blur="hasChanged($event)"></textarea>
@@ -56,8 +54,7 @@
               :pattern="patternAttr"
               :placeholder="placeholderAttr"
               :step="stepAttr"
-              :tabindex="tabindex"
-              :title="titleAttr"
+              :tabindex="tabindexAttr"
               :readonly="readonly"
               :required="required"
               :type="this.type"
@@ -358,32 +355,6 @@ export default {
 
   computed: {
     /**
-     * Test whether or not the rendered field is a select dropdown
-     * field or radio input group.
-     *
-     * @returns {boolean} TRUE if type is "select" or "radio"
-     *                    FALSE otherwise
-     */
-    isSelect() {
-      return (this.type === 'select' || this.type === 'radio');
-    },
-    /**
-     * Test whether or not the rendered field is a textarea field
-     *
-     * @returns {boolean} TRUE if type is "textarea". FALSE otherwise
-     */
-    isTextarea() {
-      return (this.type === 'textarea');
-    },
-    /**
-     * Test whether or not the rendered field is a radio input group
-     *
-     * @returns {boolean} TRUE if type is "radop". FALSE otherwise
-     */
-    isRadio() {
-      return (this.type === 'radio');
-    },
-    /**
      * Keyboard shortcut key for input field.
      *
      * If accesskey is undefined, the `accesskey` attribute won't be
@@ -396,6 +367,85 @@ export default {
         ? this.accesskey
         : undefined;
     },
+
+    /**
+     * IDs to link the input field with help text and error message
+     * blocks
+     *
+     * @returns {string|undefined}
+     */
+    describedByIDs() {
+      let output = '';
+      let sep = '';
+
+      if (this.hasHelp !== '') {
+        output = this.getID('help');
+        sep = ' ';
+      }
+
+      if (this.hasError && this.showError === true) {
+        output += sep + this.getID('error');
+      }
+
+      return (output !== '')
+        ? output
+        : undefined;
+    },
+
+    /**
+     * List of class names to add to the input field
+     *
+     * @returns {string}
+     */
+    inputClass() {
+      const noBorder = ['radio', 'range'];
+      const prefix = 'single-val-input__input-wrap';
+      let output = prefix;
+
+      if (temporal.indexOf(this.type) > -1) {
+        output += ` ${prefix}--auto`;
+      }
+
+      if (noBorder.indexOf(this.type) > -1) {
+        output += ` ${prefix}--no-border`;
+      }
+
+      if (this.showError === true) {
+        output += ` ${prefix}--invalid`;
+      }
+
+      return output;
+    },
+
+    /**
+     * Test whether or not the rendered field is a radio input group
+     *
+     * @returns {boolean} TRUE if type is "radop". FALSE otherwise
+     */
+    isRadio() {
+      return (this.type === 'radio');
+    },
+
+    /**
+     * Test whether or not the rendered field is a select dropdown
+     * field or radio input group.
+     *
+     * @returns {boolean} TRUE if type is "select" or "radio"
+     *                    FALSE otherwise
+     */
+    isSelect() {
+      return (this.type === 'select' || this.type === 'radio');
+    },
+
+    /**
+     * Test whether or not the rendered field is a textarea field
+     *
+     * @returns {boolean} TRUE if type is "textarea". FALSE otherwise
+     */
+    isTextarea() {
+      return (this.type === 'textarea');
+    },
+
     /**
      * Maximum numeric/temporal value allowed for valid input
      *
@@ -438,31 +488,6 @@ export default {
       return (hasCharLimit(this.type) && typeof this.attrs.minlength !== 'undefined')
         ? this.attrs.minlength
         : undefined;
-    },
-
-    /**
-     * List of class names to add to the input field
-     *
-     * @returns {string}
-     */
-    inputClass() {
-      const noBorder = ['radio', 'range'];
-      const prefix = 'single-val-input__input-wrap';
-      let output = prefix;
-
-      if (temporal.indexOf(this.type) > -1) {
-        output += ` ${prefix}--auto`;
-      }
-
-      if (noBorder.indexOf(this.type) > -1) {
-        output += ` ${prefix}--no-border`;
-      }
-
-      if (this.showError === true) {
-        output += ` ${prefix}--invalid`;
-      }
-
-      return output;
     },
 
     /**
@@ -522,29 +547,11 @@ export default {
         : undefined;
     },
 
-    /**
-     * IDs to link the input field with help text and error message
-     * blocks
-     *
-     * @returns {string|undefined}
-     */
-    describedByIDs() {
-      let output = '';
-      let sep = '';
-
-      if (this.hasHelp !== '') {
-        output = this.getID('help');
-        sep = ' ';
-      }
-
-      if (this.hasError && this.showError === true) {
-        output += sep + this.getID('error');
-      }
-
-      return (output !== '')
-        ? output
+    tabindexAttr() {
+      return (typeof this.tabindex === -1)
+        ? -1
         : undefined;
-    },
+    }
   },
 
   methods: {
