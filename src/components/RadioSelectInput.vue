@@ -51,7 +51,7 @@ const normaliseOptions = (options) => {
   console.group('normaliseOptions()');
   console.log('options:', options);
 
-  if (typeof options === 'object') {
+  if (Array.isArray(options) === false && typeof options === 'object') {
     const output = [];
     const keys = Object.keys(options);
 
@@ -376,7 +376,8 @@ export default {
   },
 
   beforeMount() {
-    // console.group('AccessibleSelect.beforeMount()');
+    console.group('AccessibleSelect.beforeMount()');
+    console.log('this.options:', this.options);
 
     // Get the data type of the supplied "selected" value
     switch (typeof this.value) {
@@ -388,7 +389,7 @@ export default {
         break;
       default:
         this.currentValue = '';
-
+    }
     // Check if
     const noNonEmpty = isBoolTrue(this.noNonEmpty);
     this.radio = isBoolTrue(this.isRadio)
@@ -396,8 +397,6 @@ export default {
     // Make sure options are useable
     let options = normaliseOptions(this.options);
 
-    console.group('beforeMount()');
-    console.log('this.options:', this.options);
     console.log('options:', options);
     console.log('this.radio:', this.radio);
     console.log('noNonEmpty:', noNonEmpty);
@@ -414,7 +413,6 @@ export default {
     this.usableOptions = (this.radio === true)
       ? options.map(setOptionIDs(this.fieldId))
       : options;
-    }
 
     console.log('this.usableOptions:', this.usableOptions);
     console.groupEnd();
