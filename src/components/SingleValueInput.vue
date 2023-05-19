@@ -548,10 +548,10 @@ export default {
     },
 
     tabindexAttr() {
-      return (typeof this.tabindex === -1)
+      return (this.tabindex === -1)
         ? -1
         : undefined;
-    }
+    },
   },
 
   methods: {
