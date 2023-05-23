@@ -726,6 +726,11 @@ export default {
       ? this.value
       : '';
 
+    console.group('SingleValueInput.beforeMount()')
+    console.log('this.value:', this.value);
+    console.log('this.currentValue:', this.currentValue);
+    console.groupEnd();
+
     // Do we have an error message to show the user?
     this.hasError = this.notEmpty('error', 'errorMsg');
 

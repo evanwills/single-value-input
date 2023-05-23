@@ -46,7 +46,7 @@
  *
  * @returns {Object[]}
  */
-const normaliseOptions = (options) => {
+const normaliseOptions = (options, defaultVal) => {
   let _options = [];
 
   if (Array.isArray(options) === false && typeof options === 'object') {
@@ -74,24 +74,26 @@ const normaliseOptions = (options) => {
       _val = item;
       _label = _val;
     } else {
-      if (typeof item.key !== 'undefined') {
+      if (typeof item.label !== 'undefined') {
+        lProp = 'label';
+        vProp = (typeof item.value !== 'undefined')
+          ? 'value'
+          : 'label';
+      } else if (typeof item.key !== 'undefined') {
         vProp = 'key';
-
-        if (typeof item.value !== 'undefined') {
-          lProp = 'value';
-        }
+        lProp = (typeof item.value !== 'undefined')
+          ? 'value'
+          : 'key';
       } else if (typeof item.Value !== 'undefined') {
         vProp = 'Value';
-
-        if (typeof item.Key !== 'undefined') {
-          lProp = 'Key';
-        }
-      } else if (typeof item.label !== 'undefined') {
-        lProp = 'label';
-
-        if (typeof item.value !== 'undefined') {
-          vProp = 'value';
-        }
+        lProp = (typeof item.Key !== 'undefined')
+          ? 'Key'
+          : 'Value';
+      } else if (typeof item.Key !== 'undefined') {
+        lProp = 'Key';
+        vProp = (typeof item.Key !== 'undefined')
+          ? 'Key'
+          : 'Value';
       }
 
       if (vProp === '' || lProp === '') {
@@ -110,10 +112,10 @@ const normaliseOptions = (options) => {
     }
 
     if (typeof _label !== 'string') {
-      _val = _label.toString();
+      _label = _label.toString();
     }
 
-    return { value: _val, label: _label };
+    return { value: _val, label: _label, default: (defaultVal === _val) };
   });
 };
 
@@ -323,17 +325,6 @@ export default {
 
   methods: {
     /**
-     * determine if an option has been chosen
-     *
-     * @param {{key: string|number, value: string}} option single select/radio
-     */
-    isSelected(option) {
-      return (option.key == this.value) // eslint-disable-line
-        ? this.valueMode
-        : undefined;
-    },
-
-    /**
      * Handle changes to radio or select input fields
      *
      * @param {Event} e
@@ -362,63 +353,81 @@ export default {
     },
 
     /**
+     * determine if an option has been chosen
+     *
+     * @param {{key: string|number, value: string}} option single select/radio
+     */
+    isSelected(option) {
+      return (option.value == this.value) // eslint-disable-line
+        ? this.valueMode
+        : undefined;
+    },
+
+    /**
+     * Set the current/default value
+     * (i.e. the value that's come from the server)
+     */
+    setCurrentValue() {
+      // Get the data type of the supplied default value
+      switch (typeof this.value) {
+        case 'string':
+          this.currentValue = this.value;
+          break;
+        case 'number':
+          this.currentValue = this.value.toString();
+          break;
+        default:
+          this.currentValue = '';
+      }
+    },
+
+    /**
+     * Make option list usable for <SELECT> and/or <INPUT type="radio" />
+     *
+     * Normalise key/value pairs
+     */
+    setUsableOptions() {
+      // Make sure options are useable
+      let options = normaliseOptions(this.options, this.currentValue);
+
+      // Add empty option if text for one has been specified
+      options = (this.radio === false
+                && typeof this.emptyTxt === 'string' && this.emptyTxt !== ''
+                && (isBoolTrue(this.noNonEmpty) === false || this.currentValue !== ''))
+        ? [{ value: '', label: this.emptyTxt }, ...options]
+        : options;
+
+      // Give each radio option a unique ID
+      this.usableOptions = (this.radio === true)
+        ? options.map(setOptionIDs(this.fieldId))
+        : options;
+    },
+
+    /**
      * Make sure all the boolean attributes match current state
      */
     updateBools() {
+      this.radio = isBoolTrue(this.isRadio);
+
       this.disabled = isBoolTrue(this.isDisabled);
       this.readonly = isBoolTrue(this.isReadonly);
       this.required = isBoolTrue(this.isRequired);
+
+      // Get the string value for the selected item.
+      this.valueMode = (this.radio === true)
+        ? 'checked'
+        : 'selected';
     },
   },
 
   beforeMount() {
     // console.group('AccessibleSelect.beforeMount()');
 
-    // Get the data type of the supplied "selected" value
-    switch (typeof this.value) {
-      case 'string':
-        this.currentValue = this.value;
-        break;
-      case 'number':
-        this.currentValue = this.value.toString();
-        break;
-      default:
-        this.currentValue = '';
-    }
-
-    // Check if
-    const noNonEmpty = isBoolTrue(this.noNonEmpty);
-    this.radio = isBoolTrue(this.isRadio);
-
-    // Make sure options are useable
-    let options = normaliseOptions(this.options);
-
-    console.log('options:', options);
-    console.log('this.radio:', this.radio);
-    console.log('noNonEmpty:', noNonEmpty);
-
-    // Add empty option if text for one has been specified
-    // options = (this.radio === false && typeof this.emptyTxt === 'string' && this.emptyTxt !== '' && (noNonEmpty === false || this.currentValue === ''))
-    options = (this.radio === false && typeof this.emptyTxt === 'string' && this.emptyTxt !== '')
-      ? [{ value: '', label: this.emptyTxt }, ...options]
-      : options;
-
-    console.log('options:', options);
-
-    // Give each radio option a unique ID
-    this.usableOptions = (this.radio === true)
-      ? options.map(setOptionIDs(this.fieldId))
-      : options;
-
-    console.log('this.usableOptions:', this.usableOptions);
-    console.groupEnd();
-
-    // Get the string value for the selected item.
-    this.valueMode = (this.radio === true)
-      ? 'checked'
-      : 'selected';
+    this.setCurrentValue();
 
     this.updateBools();
+    this.setUsableOptions();
+
     // console.groupEnd();
   },
 
@@ -427,7 +436,9 @@ export default {
   // },
 
   updated() {
+    // this.setCurrentValue();
     this.updateBools();
+    this.setUsableOptions();
   },
 };
 </script>

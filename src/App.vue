@@ -63,13 +63,29 @@
                       type="radio"
                       required
                       :options="multiOptions" />
-    <SingleValueInput field-id="select-field"
+    <SingleValueInput error-msg="Please choose an option"
+                      field-id="radio-field"
+                      label="Radio list group label"
+                      :options="multiOptions"
+                      required
+                      type="radio"
+                      value="2" />
+    <SingleValueInput empty-txt="-- please choose --"
+                      error-msg="Please choose an option"
+                      field-id="select-field"
                       label="Select field label"
-                      empty-txt="-- please choose --"
+                      :options="multiOptions"
+                      required
+                      type="select" />
+    <SingleValueInput empty-txt="-- please choose --"
+                      error-msg="Please choose an option"
+                      field-id="select-field-default"
+                      label="Select field with default"
+                      no-non-empty
+                      :options="multiOptions"
                       required
                       type="select"
-                      :options="multiOptions"
-                      error-msg="Please choose an option" />
+                      value="3" />
   </ul>
 </template>
 
