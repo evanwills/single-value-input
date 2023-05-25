@@ -1,12 +1,12 @@
 <template>
   <li class="single-val-input">
     <span v-if="type === 'radio'" :id="fieldId" class="single-val-input__label">
-      {{ label }}
-      <span v-if="required === true">(required)</span>
+      {{ label }}<!--
+      --><span class="single-val-input__required">{{ requiredTxt }}</span>
     </span>
     <label v-else :for="fieldId" class="single-val-input__label">
       {{ label }}<!--
-      --><span v-if="required === true" class="single-val-input__required"> (required)</span><!--
+      --><span class="single-val-input__required">{{ requiredTxt }}</span><!--
     --></label>
     <div :class="inputClass">
       <RadioSelectInput v-if="isSelect"
@@ -18,9 +18,10 @@
                         :is-required="required"
                         :is-readonly="readonly"
                         :is-disabled="disabled"
+                        :no-non-empty="noNonEmpty"
                         :options="options"
-                        :tab-index="tabindexAttr"
-                        :value="value"
+                        :tab-index="tabindex"
+                        :value="currentValue"
                         v-on:invalid="selectInvalid($event)"
                         v-on:change="selectChanged($event)"
                         v-on:blur="selectChanged($event)" />
@@ -38,7 +39,7 @@
                 :required="required"
                 :rows="rowsAttr"
                 :spellcheck="spellCheckAttr"
-                :tabindex="tabindexAttr"
+                :tabindex="tabindex"
                 v-model="currentValue"
                 v-on:change="hasChanged($event)"
                 v-on:blur="hasChanged($event)"></textarea>
@@ -54,7 +55,7 @@
               :pattern="patternAttr"
               :placeholder="placeholderAttr"
               :step="stepAttr"
-              :tabindex="tabindexAttr"
+              :tabindex="tabindex"
               :readonly="readonly"
               :required="required"
               :type="this.type"
@@ -531,6 +532,12 @@ export default {
         : undefined;
     },
 
+    requiredTxt() {
+      return (this.required === true)
+        ? ''
+        : ' (optional)';
+    },
+
     /**
      * Number of lines high a textarea field should be.
      *
@@ -563,12 +570,6 @@ export default {
     stepAttr() {
       return (typeof this.attrs.step !== 'undefined')
         ? this.attrs.step
-        : undefined;
-    },
-
-    tabindexAttr() {
-      return (this.tabindex === -1)
-        ? -1
         : undefined;
     },
   },
@@ -726,11 +727,6 @@ export default {
       ? this.value
       : '';
 
-    console.group('SingleValueInput.beforeMount()')
-    console.log('this.value:', this.value);
-    console.log('this.currentValue:', this.currentValue);
-    console.groupEnd();
-
     // Do we have an error message to show the user?
     this.hasError = this.notEmpty('error', 'errorMsg');
 
@@ -848,14 +844,22 @@ $border-rad: 0.3rem;
 
   &__label {
     display: block;
-    // font-weight: bold;
+    font-weight: bold;
     padding: 0.5rem 0;
     text-align: left;
     text-align: start;
     white-space: normal;
 
-    &::after {
-      content: ':';
+    // &::after {
+    //   content: ':';
+    // }
+  }
+
+  &:first-child {
+    .single-val-input {
+      &__label {
+        padding-top: 0;
+      }
     }
   }
 
@@ -926,6 +930,7 @@ $border-rad: 0.3rem;
   &__required {
     font-style: italic;
     font-size: 0.875rem;
+    font-weight: normal;
   }
 }
 </style>

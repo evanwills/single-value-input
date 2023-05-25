@@ -10,10 +10,10 @@
             :name="radioName"
             :readonly="readonly"
             :required="required"
-            :tabindex="tabIndexAttr"
+            :tabindex="tabIndex"
             :value="option.value"
-            v-on:change="hasChanged($event)"
-            v-on:blur="hasChanged($event)" />
+            v-on:change="radioChanged($event)"
+            v-on:blur="radioChanged($event)" />
       <label :for="option.id" :class="radioClass">{{ option.label }}</label>
     </li>
   </ul>
@@ -25,9 +25,9 @@
             :disabled="disabled"
             :readonly="readonly"
             :required="required"
-            :tabindex="tabIndexAttr"
-            v-on:change="hasChanged($event)"
-            v-on:blur="hasChanged($event)">
+            :tabindex="tabIndex"
+            v-on:change="selectChanged($event)"
+            v-on:blur="selectChanged($event)">
       <option v-for="(option, i) of usableOptions"
               :value="option.value"
               :selected="isSelected(option)"
@@ -258,6 +258,7 @@ export default {
        * @property {string} currentValue
        */
       currentValue: '',
+
       /**
        * List of options to be rendered
        *
@@ -266,26 +267,100 @@ export default {
        * @property {Object[]}
        */
       usableOptions: [],
+
+      /**
+       * Whether or not the current user submitted value is valid
+       *
+       * (i.e. is not empty and is one of the known values provided
+       * when the component was mounted)
+       *
+       * @property {boolean} invlid
+       */
       invalid: false,
-      valueMode: 'selected',
+
+      /**
+       * The name of the attribute used to indicate the preset value
+       * for the field
+       *
+       * * For <SELECT> field the correct attribute is `selected`
+       * * For <INPUT type="radio"> the correct attribute is `checked`
+       *
+       * @property {string} valueAttr
+       */
+      valueAttr: 'selected',
+
+      /**
+       * Whether or not to render the empty option for <SELECT>
+       * fields
+       *
+       * Only ever true if `no-non-empty` is set and the `value`
+       * attribute on this component is an empty string
+       *
+       * @property {boolean} useEmpty
+       */
+      useEmpty: false,
+
+      /**
+       * Whether or not the user is required to select a non-empty
+       * value
+       *
+       * @property {boolean} useEmpty
+       */
       required: false,
+
+      /**
+       * Whether or not the user can currently interact with the
+       * field
+       *
+       * @property {boolean} disabled
+       */
       disabled: false,
+
+      /**
+       * Whether or not the field is set to Read-only mode
+       *
+       * @property {boolean} readonly
+       */
       readonly: false,
+
+      /**
+       * Whether or not to render the field as a group of radio
+       * buttons or <SELECT> dropdown
+       *
+       * @property {boolean} radio
+       */
       radio: false,
     };
   },
 
   computed: {
+    /**
+     * Provide a value for the accesskey attribute if the client has
+     * specified one
+     *
+     * @returns {string|undefined}
+     */
     accessKeyAttr() {
       return (typeof this.accessKey === 'string' && this.accessKey.trim() !== '')
         ? this.accessKey
         : undefined;
     },
 
+    /**
+     * Get the value of the `name` attribute for all radio inputs
+     * in the group
+     *
+     * @returns {string}
+     */
     radioName() {
       return `${this.fieldId}-radio`;
     },
 
+    /**
+     * Get the class to use on the label for the select field
+     *
+     * @returns {string}
+     */
     selectClass() {
       const base = 'tsf-select';
 
@@ -298,6 +373,11 @@ export default {
         : output;
     },
 
+    /**
+     * Get the class to use on the wrapper for the select field
+     *
+     * @returns {string}
+     */
     radioClass() {
       const base = 'radio-group__label';
 
@@ -306,16 +386,21 @@ export default {
         : base;
     },
 
-    tabIndexAttr() {
-      return (this.tabindex === -1)
-        ? -1
-        : undefined;
-    },
-
+    /**
+     * Get the ID for the error element
+     *
+     * @returns {string}
+     */
     errorID() {
       return `${this.fieldId}--error`;
     },
 
+    /**
+     * Get the help IDs (as provided by the client) to render in the
+     * `aria-describedby` attribute
+     *
+     * @returns {string|undefined}
+     */
     getDescribedbyIDs() {
       return (typeof this.helpIds === 'string' && this.helpIds.trim() !== '')
         ? this.helpIds
@@ -325,31 +410,45 @@ export default {
 
   methods: {
     /**
-     * Handle changes to radio or select input fields
+     * Handle updating state and emitting events from both `blur`
+     * and `change` events for both <SELECT> and <INPUT type=radio>
+     * elements.
      *
-     * @param {Event} e
+     * 1. Set current value (if it's valid)
+     * 2. Set invalid state
+     * 3. Emit an invalid event
+     * 4. 1. value has changed emit a "change" event
+     *    2. If value has not "change" but event was "blur" reemit
+     *       the "blur" event
+     *
+     * @param {Event} e `blur` or `change` Event emitted by either
+     *                  <SELECT> and <INPUT type=radio> elements.
+     * @param {string|boolean} newVal New (value after validation).
+     *
+     * @emits invalid with a boolean value.
+     *                TRUE if new value is invalid.
+     *                FALSE otherwise
+     * @emits change  If new value is valid and different from
+     *                previous value
+     * @emits blur    If new value is the same as previous value
+     *                and the triggering event was a `blur` Event.
      */
-    hasChanged(e) {
-      const field = e.target;
-      let ok = false;
+    handleChangeShared(e, newVal) {
+      const oldVal = this.currentValue;
 
-      const val = (this.isRadio === false || field.checked === true)
-        ? field.value
-        : '';
-
-      for (let a = 0; a < this.usableOptions.length; a += 1) {
-        if (this.usableOptions[a].value === field.value) {
-          // make sure there's no funny business going on and that
-          // the selected value is valid
-          ok = true;
-          this.currentValue = val;
-        }
+      if (typeof newVal === 'string') {
+        this.currentValue = newVal;
       }
 
-      this.invalid = ((this.required === true && this.currentValue === '') || ok === false);
+      this.invalid = ((this.required === true && this.currentValue === '') || newVal === false);
 
       this.$emit('invalid', this.invalid);
-      this.$emit('change', e);
+
+      if (oldVal !== this.currentValue) {
+        this.$emit('change', e);
+      } else if (e.type === 'blur') {
+        this.$emit('blur', e);
+      }
     },
 
     /**
@@ -359,8 +458,30 @@ export default {
      */
     isSelected(option) {
       return (option.value == this.value) // eslint-disable-line
-        ? this.valueMode
+        ? this.valueAttr
         : undefined;
+    },
+
+    /**
+     * Handle changes to radio or select input fields
+     *
+     * @param {Event} e
+     */
+    radioChanged(e) {
+      const newVal = (e.target.checked === true)
+        ? this.validateValue(e.target.value)
+        : true;
+
+      this.handleChangeShared(e, newVal);
+    },
+
+    /**
+     * Handle changes to <SELECT> fields
+     *
+     * @param {Event} e
+     */
+    selectChanged(e) {
+      this.handleChangeShared(e, this.validateValue(e.target.value));
     },
 
     /**
@@ -390,10 +511,7 @@ export default {
       // Make sure options are useable
       let options = normaliseOptions(this.options, this.currentValue);
 
-      // Add empty option if text for one has been specified
-      options = (this.radio === false
-                && typeof this.emptyTxt === 'string' && this.emptyTxt !== ''
-                && (isBoolTrue(this.noNonEmpty) === false || this.currentValue !== ''))
+      options = (this.radio === false && this.useEmpty === true && typeof this.emptyTxt === 'string' && this.emptyTxt !== '')
         ? [{ value: '', label: this.emptyTxt }, ...options]
         : options;
 
@@ -412,23 +530,38 @@ export default {
       this.disabled = isBoolTrue(this.isDisabled);
       this.readonly = isBoolTrue(this.isReadonly);
       this.required = isBoolTrue(this.isRequired);
+      this.useEmpty = (isBoolTrue(this.noNonEmpty) === false || this.currentValue === '');
 
       // Get the string value for the selected item.
-      this.valueMode = (this.radio === true)
+      this.valueAttr = (this.radio === true)
         ? 'checked'
         : 'selected';
+    },
+
+    /**
+     * Validate new value from last user interaction
+     *
+     * @returns {string|false} String if new value is valid,
+     *                         FALSE otherwise.
+     */
+    validateValue(val) {
+      for (let a = 0; a < this.usableOptions.length; a += 1) {
+        if (this.usableOptions[a].value === val) {
+          // make sure there's no funny business going on and that
+          // the selected value is valid
+          return val;
+        }
+      }
+
+      return false;
     },
   },
 
   beforeMount() {
-    // console.group('AccessibleSelect.beforeMount()');
-
     this.setCurrentValue();
 
     this.updateBools();
     this.setUsableOptions();
-
-    // console.groupEnd();
   },
 
   // mounted() {
@@ -557,7 +690,7 @@ ul.radio-group {
 
   & .radio-group__label {
     display: block;
-    font-weight: bold;
+    // font-weight: bold;
     padding: 0.5rem 0 0.5rem 3rem;
     position: relative;
     width: 100%;
@@ -608,6 +741,8 @@ ul.radio-group {
     }
 
     &:checked + .radio-group__label {
+      font-weight: bold;
+
       &:after {
         opacity: 1;
       }

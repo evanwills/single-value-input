@@ -64,7 +64,7 @@
                       required
                       :options="multiOptions" />
     <SingleValueInput error-msg="Please choose an option"
-                      field-id="radio-field"
+                      field-id="radio-field-default"
                       label="Radio list group label"
                       :options="multiOptions"
                       required
