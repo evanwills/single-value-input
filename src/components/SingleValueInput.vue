@@ -1,13 +1,15 @@
 <template>
   <li class="single-val-input">
     <span v-if="type === 'radio'" :id="fieldId" class="single-val-input__label">
-      {{ label }}<!--
-      --><span class="single-val-input__required">{{ requiredTxt }}</span>
+      {{ label }}
+      <span class="single-val-input__required">{{ requiredTxt }}</span>
+      <span :class="errorIconClass">priority_high</span>
     </span>
     <label v-else :for="fieldId" class="single-val-input__label">
-      {{ label }}<!--
-      --><span class="single-val-input__required">{{ requiredTxt }}</span><!--
-    --></label>
+      {{ label }}
+      <span class="single-val-input__required">{{ requiredTxt }}</span>
+      <span :class="errorIconClass">priority_high</span>
+    </label>
     <div :class="inputClass">
       <RadioSelectInput v-if="isSelect"
                         :field-id="fieldId"
@@ -22,9 +24,10 @@
                         :options="options"
                         :tab-index="tabindex"
                         :value="currentValue"
-                        v-on:invalid="selectInvalid($event)"
+                        v-on:blur="selectChanged($event)"
                         v-on:change="selectChanged($event)"
-                        v-on:blur="selectChanged($event)" />
+                        v-on:focus="genericHandler($event)"
+                        v-on:invalid="selectInvalid($event)" />
       <textarea v-else-if="isTextarea"
                 class="single-val-input__input"
                 :accesskey="accessKeyAttr"
@@ -41,11 +44,16 @@
                 :spellcheck="spellCheckAttr"
                 :tabindex="tabindex"
                 v-model="currentValue"
+                v-on:blur="hasChanged($event)"
                 v-on:change="hasChanged($event)"
-                v-on:blur="hasChanged($event)"></textarea>
+                v-on:focus="genericHandler($event)"
+                v-on:keydown="genericHandler($event)"
+                v-on:keypress="genericHandler($event)"
+                v-on:keyup="genericHandler($event)"></textarea>
       <input  v-else
               class="single-val-input__input"
               :accesskey="accessKeyAttr"
+              :aria-describedby="describedByIDs"
               :disabled="disabled"
               :id="fieldId"
               :max="maxAttr"
@@ -60,9 +68,12 @@
               :required="required"
               :type="this.type"
               v-model="currentValue"
-              v-on:change="hasChanged($event)"
               v-on:blur="hasChanged($event)"
-              :aria-describedby="describedByIDs" />
+              v-on:change="hasChanged($event)"
+              v-on:focus="genericHandler($event)"
+              v-on:keydown="genericHandler($event)"
+              v-on:keypress="genericHandler($event)"
+              v-on:keyup="genericHandler($event)" />
       <div v-if="this.hasError === true && showError === true"
             class="single-val-input__error"
             :id="getID('error')" >
@@ -85,18 +96,6 @@ const inputTypes = [
   'url', 'week',
 ];
 
-const inputAttributes = {
-  max: 'number',
-  maxlength: 'number',
-  min: 'number',
-  minlength: 'number',
-  pattern: 'string',
-  placeholder: 'string',
-  rows: 'number',
-  step: 'number',
-  spellcheck: 'boolean',
-};
-
 const hasLimit = (type) => {
   const areLimited = ['date', 'datetime-local', 'month', 'number', 'range', 'time', 'week'];
 
@@ -114,7 +113,7 @@ const temporal = ['date', 'datetime-local', 'time'];
 export default {
   name: 'single-value-input',
 
-  emits: ['change', 'isvalid'],
+  emits: ['change', 'isvalid', 'keydown', 'keypress', 'keyup'],
 
   props: {
     /**
@@ -124,40 +123,6 @@ export default {
      * @property {string} accesskey
      */
     accesskey: { type: String, required: false, default: '' },
-
-    /**
-     * Standard HTML input/textarea specific attributes to augment
-     * the behaviour of the field (usually for validation purposes)
-     *
-     * Object properties that are used:
-     * * max - maximum value for `number`, `date`, `time`,
-     *             `datetime-local` & `range` type input fields
-     * * maxlength - maximum number of characters for `text` and
-     *             `textarea` fields
-     * * min   -   minimum value for `number`, `range`, `date`,
-     *             `time` & `datetime-local` type input fields
-     *             * for `number` & `range` fields this must be a
-     *               number
-     *             * for `date` fields, this must be an ISO-8601
-     *               formatted date string
-     *             * for `time` fields, this must be an ISO-8601
-     *               formatted time string
-     *             * for `datetime-local` fields, this must be an
-     *               ISO-8601 formatted datetime string
-     * * minlength - minimum number of characters for `text` and
-     *        `textarea` fields
-     * * pattern - JavaScript RegExp pattern for validating input
-     *             string
-     * * placeholder - Placeholder text to show when input is empty
-     * * rows  -   Number of lines hight to make a `textarea` field
-     * * step  -   Amount to increment a 'number' or `range` field
-     *             when user click an arrow key,
-     * * spellcheck - Whether or not to user the browser's spell
-     *             checker
-     *
-     * @property {Object} attributes
-     */
-    attributes: { type: Object, required: false },
 
     /**
      * A function that returns a string error message if input is
@@ -197,6 +162,31 @@ export default {
     errorMsg: { type: String, required: false, default: '' },
 
     /**
+     * Whether or not this field has been marked as invalid due to
+     * (addional) external rules
+     *
+     * e.g. User must enter either a mobile phone number or a land
+     *      line number.
+     *      If both are empty then both fields must be marked as
+     *      invalid.
+     *
+     * @property {boolean} externalInvalid
+     */
+    externalInvalid: { type: Boolean, required: false, default: false },
+
+    /**
+     * If the field needs to be associated with any extra blocks of
+     * text, this provides the IDs for those other blocks of text
+     *
+     * If `externalInvalid` is TRUE, this provides a way to link the
+     * field with the information about why the field has been marked
+     * as invalid.
+     *
+     * @property {string} extraDescByIds
+     */
+    extraDescByIds: { type: String, required: false, default: '' },
+
+    /**
      * ID of the field being rendered
      *
      * Used to link the field to its label, error message and help
@@ -233,6 +223,44 @@ export default {
     label: { type: String, required: true },
 
     /**
+     * Maximum number of characters user can input into this field
+     *
+     * Used for email, number, text & url type input fields as well
+     * as textarea fields
+     *
+     * @property {number} maxLength
+     */
+    maxLength: { required: false },
+
+    /**
+     * Maximum value allowed
+     *
+     * (used for date, datetime-local, number, range & time type input fields )
+     *
+     * @property {number|string} maxVal
+     */
+    maxVal: { required: false },
+
+    /**
+     * Minimum number of characters user can input into this field
+     *
+     * Used for email, number, text & url type input fields as well
+     * as textarea fields
+     *
+     * @property {number} minLength
+     */
+    minLength: { required: false },
+
+    /**
+     * Minimum value allowed
+     *
+     * (used for date, datetime-local, number, range & time type input fields )
+     *
+     * @property {number|string} maxVal
+     */
+    minVal: { required: false },
+
+    /**
      * Whether or not to show the empty value if the default value
      * is non-empty
      *
@@ -253,6 +281,20 @@ export default {
     options: { type: Array, required: false },
 
     /**
+     * JavaScript regular expression for validating string input
+     *
+     * @property {string} pattern
+     */
+    pattern: { type: String, required: false },
+
+    /**
+     * Helper text to show inside input field when value is empty
+     *
+     * @property {string} placeholder
+     */
+    placeholder: { type: String, required: false },
+
+    /**
      * Whether or not the field is readonly
      * (i.e. user is prevented from interacting with the field)
      *
@@ -266,6 +308,31 @@ export default {
      * @property {boolean} required
      */
     required: { type: Boolean, required: false, default: false },
+
+    /**
+     * Number of lines in a textarea input
+     *
+     * @property {number} rows
+     */
+    rows: { required: false },
+
+    /**
+     * Whether or not to use built in browser/system spell check
+     * functionality
+     *
+     * @property { type: Boolean, required: false },
+     */
+    spellCheck: { type: Boolean, required: false },
+
+    /**
+     * Increment when using buttons to decrease/increase value
+     *
+     * Used for date, datetime-local, number, range & time type
+     * input fields.
+     *
+     * @property {number|string} maxVal
+     */
+    step: { type: Number, required: false },
 
     /**
      * When content is hidden, tabindex must be set to `-1` to
@@ -355,6 +422,7 @@ export default {
        * @property {boolean}
        */
       hasError: true,
+
       /**
        * Whether or not there is help text either as an attribute
        * or a slot
@@ -362,6 +430,7 @@ export default {
        * @property {boolean}
        */
       hasHelp: true,
+
       /**
        * Whether or not the current value is valid
        *
@@ -405,11 +474,26 @@ export default {
 
       if (this.hasError && this.showError === true) {
         output += sep + this.getID('error');
+        sep = ' ';
+      }
+
+      if (typeof this.extraDescByIds === 'string' && this.extraDescByIds.trim() !== '') {
+        output += sep + this.extraDescByIds;
       }
 
       return (output !== '')
         ? output
         : undefined;
+    },
+
+    errorIconClass() {
+      const tmp = 'single-val-input__error-icon';
+
+      const output = ((this.hasError === true && this.showError === true) || this.externalInvalid === true)
+        ? `${tmp} ${tmp}--show`
+        : tmp;
+
+      return `material-icons ${output}`;
     },
 
     /**
@@ -430,7 +514,7 @@ export default {
         output += ` ${prefix}--no-border`;
       }
 
-      if (this.showError === true) {
+      if (this.showError === true || this.externalInvalid === true) {
         output += ` ${prefix}--invalid`;
       }
 
@@ -472,8 +556,8 @@ export default {
      * @returns {number|undefined}
      */
     maxAttr() {
-      return (hasLimit(this.type) && typeof this.attrs.max !== 'undefined')
-        ? this.attrs.max
+      return (hasLimit(this.type) && typeof this.max !== 'undefined')
+        ? this.max
         : undefined;
     },
 
@@ -483,8 +567,8 @@ export default {
      * @returns {number|undefined}
      */
     maxLengthAttr() {
-      return (hasCharLimit(this.type) && typeof this.attrs.maxlength !== 'undefined')
-        ? this.attrs.maxlength
+      return (hasCharLimit(this.type) && typeof this.maxLength !== 'undefined')
+        ? this.maxLength
         : undefined;
     },
 
@@ -494,8 +578,8 @@ export default {
      * @returns {number|undefined}
      */
     minAttr() {
-      return (hasLimit(this.type) && typeof this.attrs.min !== 'undefined')
-        ? this.attrs.min
+      return (hasLimit(this.type) && typeof this.minVal !== 'undefined')
+        ? this.minVal
         : undefined;
     },
 
@@ -505,8 +589,8 @@ export default {
      * @returns {number|undefined}
      */
     minLengthAttr() {
-      return (hasCharLimit(this.type) && typeof this.attrs.minlength !== 'undefined')
-        ? this.attrs.minlength
+      return (hasCharLimit(this.type) && typeof this.minLength !== 'undefined')
+        ? this.minLength
         : undefined;
     },
 
@@ -516,8 +600,8 @@ export default {
      * @returns {string|undefined}
      */
     patternAttr() {
-      return (typeof this.attrs.pattern !== 'undefined')
-        ? this.attrs.pattern
+      return (typeof this.pattern === 'string' && this.pattern.trim() !== '')
+        ? this.pattern
         : undefined;
     },
 
@@ -527,8 +611,8 @@ export default {
      * @returns {string|undefined}
      */
     placeholderAttr() {
-      return (typeof this.attrs.placeholder !== 'undefined')
-        ? this.attrs.placeholder
+      return (typeof this.placeholder === 'string' && this.placeholder.trim() !== '')
+        ? this.placeholder
         : undefined;
     },
 
@@ -544,8 +628,8 @@ export default {
      * @returns {number|undefined}
      */
     rowsAttr() {
-      return (typeof this.attrs.rows !== 'undefined')
-        ? this.attrs.rows
+      return (typeof this.rows !== 'undefined')
+        ? this.rows
         : undefined;
     },
 
@@ -556,8 +640,8 @@ export default {
      * @returns {boolean|undefined}
      */
     spellCheckAttr() {
-      return (typeof this.attrs.spellcheck !== 'undefined')
-        ? this.attrs.spellcheck
+      return (typeof this.spellCheck !== 'undefined')
+        ? this.spellCheck
         : undefined;
     },
 
@@ -568,8 +652,8 @@ export default {
      * @returns {number|undefined}
      */
     stepAttr() {
-      return (typeof this.attrs.step !== 'undefined')
-        ? this.attrs.step
+      return (typeof this.step !== 'undefined')
+        ? this.step
         : undefined;
     },
   },
@@ -627,6 +711,7 @@ export default {
 
       if (this.showError === false && typeof this.customValidation === 'function') {
         this.extraError = this.customValidation(this.currentValue);
+        this.showError = (this.extraError !== false);
       }
 
       if (this.showError === false) {
@@ -681,6 +766,15 @@ export default {
     },
 
     /**
+     * Re-emit a focus, keyup, keydown or keypress event.
+     *
+     * @param {Event} event
+     */
+    genericHandler(event) {
+      this.$emit(event.type, event);
+    },
+
+    /**
      * Check whether there's some content to render for a given text block
      *
      * @param {string} slotName Name of the slot to be checked
@@ -732,57 +826,6 @@ export default {
 
     // Do we have a help text block to show the user?
     this.hasHelp = this.notEmpty('help', 'helpTxt');
-
-    // Validate user supplied attributes
-    if (typeof this.attributes !== 'undefined') {
-      /**
-       * List of attribute keys user has supplied
-       *
-       * @var {string[]}
-       */
-      const tmpUserKeys = Object.keys(this.attributes);
-
-      for (let a = 0; a < tmpUserKeys.length; a += 1) {
-        // normalise the keys so they are more likely to match
-        const lowerKey = tmpUserKeys[a].toLowerCase();
-        const key = tmpUserKeys[a];
-        const attrType = typeof this.attributes[key];
-
-        if ((typeof inputAttributes[lowerKey] !== 'undefined' && attrType === inputAttributes[lowerKey])
-            || (temporal.indexOf(this.type) > -1 && (lowerKey === 'min' || lowerKey === 'max') && attrType === 'string')
-        ) {
-          // This something we want. Add it to the list of
-          // attributes we can use
-          this.attrs[lowerKey] = this.attributes[key];
-
-          if (this.type === 'date' || this.type === 'datetime-local') {
-            // Make sure date & datetime min/max are valid
-            const tmpDate = new Date(this.attributes[key]);
-
-            if (tmpDate.toString() === 'Invalid Date') {
-              console.warn(
-                `input#${this.fieldId} type: \`${this.type}\`, `
-                + `attribute: \`${key}\` ("${this.attributes[key]}") is invalid!`,
-              );
-            } else {
-              this.custom[lowerKey] = tmpDate;
-            }
-          } else if (this.type === 'time') {
-            // make sure time min/max value is valid
-            const tmpTime = this.getTimeAsSeconds(this.attributes[key]);
-
-            if (tmpTime !== false) {
-              this.custom[lowerKey] = tmpTime;
-            } else {
-              console.warn(
-                `input#${this.fieldId} type: \`time\`, `
-                + `attribute: \`${key}\` ("${this.attributes[key]}") is invalid!`,
-              );
-            }
-          }
-        }
-      }
-    }
   },
 };
 </script>
@@ -843,9 +886,11 @@ $border-rad: 0.3rem;
   }
 
   &__label {
+    box-sizing: border-box;
     display: block;
     font-weight: bold;
-    padding: 0.5rem 0;
+    padding: 0.5rem 2rem 0.5rem 0;
+    position: relative;
     text-align: left;
     text-align: start;
     white-space: normal;
@@ -859,6 +904,12 @@ $border-rad: 0.3rem;
     .single-val-input {
       &__label {
         padding-top: 0;
+      }
+
+      &__error {
+        &-icon {
+          top: 37.5%;
+        }
       }
     }
   }
@@ -881,6 +932,30 @@ $border-rad: 0.3rem;
     > :last-child {
       margin-bottom: 0;
       padding-bottom: 0;
+    }
+
+    &-icon {
+      background: $tsf-red;
+      border-radius: 50rem;
+      color: $white;
+      display: inline-block;
+      font-size: 0.75rem;
+      line-height: 0.77rem;
+      opacity: 0;
+      padding: 0.275rem;
+      position: absolute;
+      // left: 0.5rem;
+      right: -0.5rem;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      transition: opacity ease-in-out 0.3s;
+      width: 1.25rem;
+      height: 1.25rem;
+      text-align: center;
+
+      &--show {
+        opacity: 1;
+      }
     }
   }
 

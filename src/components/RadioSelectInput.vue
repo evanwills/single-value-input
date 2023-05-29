@@ -5,11 +5,11 @@
             :accesskey="accessKeyAttr"
             :aria-describedby="getDescribedbyIDs"
             :checked="isSelected(option)"
-            :disabled="disabled"
+            :disabled="disabledAttr"
             :id="option.id"
             :name="radioName"
-            :readonly="readonly"
-            :required="required"
+            :readonly="readonlyAttr"
+            :required="requiredAttr"
             :tabindex="tabIndex"
             :value="option.value"
             v-on:change="radioChanged($event)"
@@ -22,9 +22,9 @@
     <select :id="fieldId"
             :accesskey="accessKeyAttr"
             :aria-describedby="getDescribedbyIDs"
-            :disabled="disabled"
-            :readonly="readonly"
-            :required="required"
+            :disabled="disabledAttr"
+            :readonly="readonlyAttr"
+            :required="requiredAttr"
             :tabindex="tabIndex"
             v-on:change="selectChanged($event)"
             v-on:blur="selectChanged($event)">
@@ -299,37 +299,6 @@ export default {
        * @property {boolean} useEmpty
        */
       useEmpty: false,
-
-      /**
-       * Whether or not the user is required to select a non-empty
-       * value
-       *
-       * @property {boolean} useEmpty
-       */
-      required: false,
-
-      /**
-       * Whether or not the user can currently interact with the
-       * field
-       *
-       * @property {boolean} disabled
-       */
-      disabled: false,
-
-      /**
-       * Whether or not the field is set to Read-only mode
-       *
-       * @property {boolean} readonly
-       */
-      readonly: false,
-
-      /**
-       * Whether or not to render the field as a group of radio
-       * buttons or <SELECT> dropdown
-       *
-       * @property {boolean} radio
-       */
-      radio: false,
     };
   },
 
@@ -354,6 +323,24 @@ export default {
      */
     radioName() {
       return `${this.fieldId}-radio`;
+    },
+
+    requiredAttr() {
+      return (this.isRequired === true)
+        ? true
+        : undefined;
+    },
+
+    readonlyAttr() {
+      return (this.isReadonly === true)
+        ? true
+        : undefined;
+    },
+
+    disabledAttr() {
+      return (this.isDisabled === true)
+        ? true
+        : undefined;
     },
 
     /**
@@ -457,8 +444,12 @@ export default {
      * @param {{key: string|number, value: string}} option single select/radio
      */
     isSelected(option) {
+      const valueAttr = (this.isRadio === true)
+        ? 'checked'
+        : 'selected';
+
       return (option.value == this.value) // eslint-disable-line
-        ? this.valueAttr
+        ? valueAttr
         : undefined;
     },
 
@@ -499,6 +490,38 @@ export default {
           break;
         default:
           this.currentValue = '';
+      }
+
+      // Make sure initial value is one of the allowed options
+      if (this.currentValue !== '') {
+        let ok = false;
+
+        for (let a = 0; a < this.usableOptions.length; a += 1) {
+          if (this.usableOptions[a].value === this.currentValue) {
+            // All good! We found a match
+            ok = true;
+            break;
+          }
+        }
+
+        if (ok === false) {
+          // Lets check whether the initial value matches a label
+          // string instead of the value
+          for (let a = 0; a < this.usableOptions.length; a += 1) {
+            if (this.usableOptions[a].label === this.currentValue) {
+              // All good! We found a match
+              this.currentValue = this.usableOptions[a].value;
+              ok = true;
+              break;
+            }
+          }
+        }
+
+        if (ok === false) {
+          // Could not find a valid match so make current value
+          // empty.
+          this.currentValue = '';
+        }
       }
     },
 
@@ -564,15 +587,26 @@ export default {
     this.setUsableOptions();
   },
 
-  // mounted() {
-  //   // this.$emit('input', this.selected);
-  // },
-
-  updated() {
-    // this.setCurrentValue();
-    this.updateBools();
-    this.setUsableOptions();
+  mounted() {
+    // this.$emit('input', this.selected);
+    if (this.validateValue(this.currentValue) === false) {
+      this.$emit('invalid', this.invalid);
+    }
   },
+
+  // updated() {
+  //   console.log('RadioSelectInput.updated()');
+  //   if (doUpdate === false) {
+  //     console.log('RadioSelectInput.updated() - do actual work');
+  //     doUpdate = true;
+
+  //     this.updateBools();
+  //     this.setUsableOptions();
+
+  //     setTimeout(() => { doUpdate = false; }, 100);
+  //     console.log('RadioSelectInput.updated() - work done');
+  //   }
+  // },
 };
 </script>
 
