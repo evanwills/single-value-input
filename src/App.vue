@@ -7,6 +7,15 @@
                       error-msg="Bad user input"
                       help-txt="This is some useful info about 'First field'"
                       :attributes="txtInpAttr" />
+    <SingleValueInput field-id="password-field"
+                      label="Password"
+                      type="password"
+                      required
+                      error-msg="Please enter a valid password">
+      <template v-slot:help>
+        <p>You need to enter your current password to change it. If you're not sure what your password is, you can <a href="https://www.thesmithfamily.com.au/forgot-password">reset your password</a> via email.</p>
+      </template>
+    </SingleValueInput>
     <SingleValueInput field-id="number-field"
                       label="Number field"
                       type="number"

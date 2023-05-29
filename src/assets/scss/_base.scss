@@ -1,0 +1,210 @@
+body {
+  font-family: $font-brand;
+}
+
+.no-scroll {
+  overflow-y: hidden;
+}
+
+h1 {
+  font-family: $font-mt-bold;
+  color: $dark-grey;
+}
+
+h2 {
+  font-size: 22px;
+  margin: 0;
+  letter-spacing: -1;
+  line-height: 27px;
+  text-transform: uppercase;
+
+  @media screen and (min-width: 48rem) {
+    line-height: 36px;
+    font-size: 28px;
+    margin-bottom: 48px;
+  }
+}
+
+h2, h3 {
+  color: $navy-blue;
+  font-weight: normal;
+}
+
+h3 {
+  font-family: $font-mt;
+}
+
+h4 {
+  color: $dark-grey
+}
+p {
+  color: $dark-grey;
+  margin-bottom: 8px;
+  color: $dark-grey
+}
+
+.sub-copy {
+  color: $light-grey-para;
+  font-size: 12px;
+  font-family: $font-brand;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.font-bold {
+  font-weight: bold;
+}
+
+.container {
+  box-sizing: border-box;
+  max-width: 1092px;
+}
+
+.title-2 {
+  font-family: $font-mt;
+}
+
+.flex {
+  display: flex;
+
+  &.column {
+    flex-direction: column;
+  }
+  &.row {
+    flex-direction: row;
+  }
+}
+
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+  &.top {
+    top: 0;
+  }
+  &.center {
+    right: 50%;
+    transform: translateX(50%);
+  }
+}
+.fixed {
+  position: fixed;
+}
+
+.avatar-container {
+  background-color: white;
+}
+
+.error {
+  background-color: $utility-red;
+  color: $white;
+  padding: 8px 16px;
+  border-radius: 0 0 5px 5px;
+  font-family: $font-brand;
+  font-weight: bold;
+  font-size: 14px;
+  max-width: 468px;
+  display: block;
+  box-sizing: border-box;
+}
+
+.error-highlight {
+  outline-color: $utility-red !important;
+  border: 1px solid $utility-red !important;
+  border-radius: 5px 5px 0 0 !important;
+}
+
+.details {
+  padding: 16px;
+  .item {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    color: colour(dark-grey);
+    // padding: 8px 0;
+    margin-bottom: 32px;
+
+    .label {
+      margin-bottom: 8px;
+    }
+    span {
+      font-weight: bold;
+    }
+    .sub-copy {
+	  font-weight: normal;
+      color: #666666;
+      font-size: 12px;
+      font-family: $font-brand;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    @media screen and (min-width: 48rem) {
+      margin-bottom: 24px;
+    }
+  }
+
+  @media screen and (min-width: 48rem) {
+    padding: 16px 0 0 48px;
+  }
+}
+
+.flex-container {
+  @extend .container;
+  display: flex;
+  flex-direction: column;
+  @media screen and (min-width: 48rem) {
+    flex-direction: row;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+.text-left {
+  text-align: left;
+}
+.text-right {
+  text-align: right;
+}
+
+// margin helpers
+
+// .my-3 {
+//   @extend .mt-32, .mb-32;
+// }
+
+// .mx-3 {
+//   @extend .ml-32, .mr-32;
+// }
+.text-decoration-none {
+  text-decoration: none;
+}
+.mb-fifteen {
+  margin-bottom: 15px;
+}
+.pl-ten {
+  padding-left: 10px;
+}
+
+/**
+ * Copied from Bootstrap 5.x CSS
+ */
+.visually-hidden,
+.visually-hidden-focusable:not(:focus):not(:focus-within) {
+  border: 0 !important;
+  clip: rect(0,0,0,0) !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  white-space: nowrap !important;
+  width: 1px !important;
+}
+
+@keyframes fade {
+  0% {opacity: 0;}
+  100% {opacity: 1;}
+}

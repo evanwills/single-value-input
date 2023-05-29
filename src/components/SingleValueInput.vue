@@ -51,7 +51,7 @@
                 v-on:keypress="genericHandler($event)"
                 v-on:keyup="genericHandler($event)"></textarea>
       <input  v-else
-              class="single-val-input__input"
+              :class="inputFieldClass"
               :accesskey="accessKeyAttr"
               :aria-describedby="describedByIDs"
               :disabled="disabled"
@@ -66,7 +66,7 @@
               :tabindex="tabindex"
               :readonly="readonly"
               :required="required"
-              :type="this.type"
+              :type="typeAttr"
               v-model="currentValue"
               v-on:blur="hasChanged($event)"
               v-on:change="hasChanged($event)"
@@ -74,6 +74,18 @@
               v-on:keydown="genericHandler($event)"
               v-on:keypress="genericHandler($event)"
               v-on:keyup="genericHandler($event)" />
+      <button v-if="type === 'password' && showPassword === false"
+              class="password-toggle"
+              v-on:click="togglePassword($event)">
+        <span class="material-icons">visibility</span>
+        <span class="visually-hidden">Show password</span>
+      </button>
+      <button v-if="type === 'password' && showPassword === true"
+              class="password-toggle"
+              v-on:click="togglePassword($event)">
+        <span class="material-icons">visibility_off</span>
+        <span class="visually-hidden">Hide password</span>
+      </button>
       <div v-if="this.hasError === true && showError === true"
             class="single-val-input__error"
             :id="getID('error')" >
@@ -92,8 +104,8 @@ import RadioSelectInput from './RadioSelectInput.vue';
 
 const inputTypes = [
   'color', 'date', 'datetime-local', 'email', 'month', 'number',
-  'radio', 'range', 'select', 'tel', 'text', 'textarea', 'time',
-  'url', 'week',
+  'password', 'radio', 'range', 'select', 'tel', 'text', 'textarea',
+  'time', 'url', 'week',
 ];
 
 const hasLimit = (type) => {
@@ -437,8 +449,18 @@ export default {
        * > __Note:__ Fields that are `required` must not be empty,
        * >           otherwise they will show an error after the
        * >           field has had focus
+       *
+       * @property {boolean}
        */
       showError: false,
+
+      /**
+       * Whether or not to make password input a text field so
+       * password can be seen
+       *
+       * @property {boolean}
+       */
+      showPassword: false,
     };
   },
 
@@ -522,6 +544,19 @@ export default {
     },
 
     /**
+     * List of class names to add to the input field
+     *
+     * @returns {string}
+     */
+    inputFieldClass() {
+      const tmp = 'single-val-input__input';
+
+      return (this.type !== 'password')
+        ? tmp
+        : `${tmp} ${tmp}--password`;
+    },
+
+    /**
      * Test whether or not the rendered field is a radio input group
      *
      * @returns {boolean} TRUE if type is "radop". FALSE otherwise
@@ -592,6 +627,16 @@ export default {
       return (hasCharLimit(this.type) && typeof this.minLength !== 'undefined')
         ? this.minLength
         : undefined;
+    },
+
+    typeAttr() {
+      if (this.type !== 'password') {
+        return this.type;
+      }
+
+      return (this.showPassword === true)
+        ? 'text'
+        : 'password';
     },
 
     /**
@@ -787,6 +832,17 @@ export default {
       return (!!this.$slots[slotName]
         || (typeof this[propName] === 'string' && this[propName].trim() !== ''));
     },
+
+    /**
+     * Toggle the visibility of the password in the password field.
+     *
+     * @param {Event} e
+     */
+    togglePassword(e) {
+      e.preventDefault();
+
+      this.showPassword = !this.showPassword;
+    },
   },
 
   beforeMount() {
@@ -832,6 +888,7 @@ export default {
 
 <style lang="scss">
 @import '../assets/scss/config';
+@import '../assets/scss/base';
 
 $border-rad: 0.3rem;
 
@@ -854,6 +911,7 @@ $border-rad: 0.3rem;
     border: 0.05rem solid $tsf-field-borders;
     border-radius: $border-rad;
     display: inline-block;
+    position: relative;
     width: 100%;
 
     &:focus-within {
@@ -997,6 +1055,10 @@ $border-rad: 0.3rem;
       width: auto;
     }
 
+    &--password {
+      padding-right: 2.6rem;
+    }
+
     &[type=range] {
       padding: 0;
     }
@@ -1007,5 +1069,17 @@ $border-rad: 0.3rem;
     font-size: 0.875rem;
     font-weight: normal;
   }
+}
+
+.password-toggle {
+  background-color: transparent;
+  color: $light-grey-para;
+  border-radius: 0.2rem;
+  display: inline-block;
+  line-height: 0.65rem;
+  padding: 0.325rem 0.5rem;
+  position: absolute;
+  right: -0.1rem;
+  top: 0;
 }
 </style>
