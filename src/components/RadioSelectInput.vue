@@ -1,5 +1,5 @@
 <template>
-  <ul class="radio-group" v-if="isRadio === true" role="group" :aria-labelledby="fieldId">
+  <ul v-if="renderType === 'radio'" class="radio-group" role="group" :aria-labelledby="fieldId">
     <li v-for="(option, i) of usableOptions" v-bind:key="i">
       <input type="radio" class="visually-hidden"
             :accesskey="accessKeyAttr"
@@ -17,6 +17,29 @@
       <label :for="option.id" :class="radioClass">{{ option.label }}</label>
     </li>
   </ul>
+
+  <span v-else-if="renderType === 'combo'" :class="selectClass">
+    <input  :accesskey="accessKeyAttr"
+            aria-autocomplete="list"
+            :aria-describedby="getDescribedbyIDs"
+            :disabled="disabledAttr"
+            :id="fieldId"
+            :list="dataListId"
+            :readonly="readonlyAttr"
+            :required="requiredAttr"
+            role="combobox"
+            :tabindex="tabIndex"
+            type="text"
+            v-on:change="comboChange($event)"
+            v-on:blur="comboChange($event)"
+            v-on:keyup="filterList($event)" />
+    <span class="material-icons">search</span>
+    <datalist :id="dataListId">
+      <option v-for="(option) of filteredOptions"
+              :value="option"
+              v-bind:key="option"></option>
+    </datalist>
+  </span>
 
   <span v-else :class="selectClass">
     <select :id="fieldId"
@@ -138,8 +161,12 @@ const setOptionIDs = (fieldID) => (item, index) => ({ ...item, id: `${fieldID}--
  */
 const isBoolTrue = (input) => (typeof input === 'boolean' && input === true);
 
+const getLabels = (option) => option.label;
+
 export default {
   name: 'accessible-select',
+
+  emits: ['blur', 'change', 'focus', 'invalid', 'keyup'],
 
   props: {
     /**
@@ -242,6 +269,8 @@ export default {
      */
     tabIndex: { type: Number, required: false, default: 0 },
 
+    type: { type: String, required: false, default: 'select' },
+
     /**
      * Predefined value for the field.
      *
@@ -269,6 +298,13 @@ export default {
       usableOptions: [],
 
       /**
+       * List of options filtered by existing string in text input
+       *
+       * @property {string[]}
+       */
+      filteredOptions: [],
+
+      /**
        * Whether or not the current user submitted value is valid
        *
        * (i.e. is not empty and is one of the known values provided
@@ -277,6 +313,18 @@ export default {
        * @property {boolean} invlid
        */
       invalid: false,
+
+      /**
+       * The mode in which the multi option input is rendered
+       *
+       * Options are:
+       * * "select" (default) - shows standard HTML <SELECT> input
+       * * "radio" - group of radio buttons
+       * * "combo" - text input with linked <DATALIST>
+       *
+       * @property {string} renderType
+       */
+      renderType: 'select',
 
       /**
        * The name of the attribute used to indicate the preset value
@@ -316,61 +364,23 @@ export default {
     },
 
     /**
-     * Get the value of the `name` attribute for all radio inputs
-     * in the group
+     * Provides the ID for the datalist element
      *
      * @returns {string}
      */
-    radioName() {
-      return `${this.fieldId}-radio`;
+    dataListId() {
+      return `${this.fieldId}--data`;
     },
 
-    requiredAttr() {
-      return (this.isRequired === true)
-        ? true
-        : undefined;
-    },
-
-    readonlyAttr() {
-      return (this.isReadonly === true)
-        ? true
-        : undefined;
-    },
-
+    /**
+     * Sets the disabled attribute on field
+     *
+     * @returns {true|undefined}
+     */
     disabledAttr() {
       return (this.isDisabled === true)
         ? true
         : undefined;
-    },
-
-    /**
-     * Get the class to use on the label for the select field
-     *
-     * @returns {string}
-     */
-    selectClass() {
-      const base = 'tsf-select';
-
-      const output = (this.required === true)
-        ? `${base} ${base}--required`
-        : base;
-
-      return (this.invalid === true)
-        ? `${output} ${base}--error`
-        : output;
-    },
-
-    /**
-     * Get the class to use on the wrapper for the select field
-     *
-     * @returns {string}
-     */
-    radioClass() {
-      const base = 'radio-group__label';
-
-      return (this.currentValue === '')
-        ? `${base} ${base}--empty`
-        : base;
     },
 
     /**
@@ -393,9 +403,103 @@ export default {
         ? this.helpIds
         : undefined;
     },
+
+    /**
+     * Get the class to use on the wrapper for the select field
+     *
+     * @returns {string}
+     */
+    radioClass() {
+      const base = 'radio-group__label';
+
+      return (this.currentValue === '')
+        ? `${base} ${base}--empty`
+        : base;
+    },
+
+    /**
+     * Get the value of the `name` attribute for all radio inputs
+     * in the group
+     *
+     * @returns {string}
+     */
+    radioName() {
+      return `${this.fieldId}-radio`;
+    },
+
+    /**
+     * Sets the readonly attribute on field
+     *
+     * @returns {true|undefined}
+     */
+    readonlyAttr() {
+      return (this.isReadonly === true)
+        ? true
+        : undefined;
+    },
+
+    /**
+     * Sets the required attribute on field
+     *
+     * @returns {true|undefined}
+     */
+    requiredAttr() {
+      return (this.isRequired === true)
+        ? true
+        : undefined;
+    },
+
+    /**
+     * Get the class to use on the label for the select field
+     *
+     * @returns {string}
+     */
+    selectClass() {
+      const base = 'tsf-select';
+
+      let output = (this.required === true)
+        ? `${base} ${base}--required`
+        : base;
+
+      if (this.renderType === 'combo') {
+        output += ` ${base}--combo`;
+      }
+
+      return (this.invalid === true)
+        ? `${output} ${base}--error`
+        : output;
+    },
   },
 
   methods: {
+    /**
+     * Handle when input for combo box changes
+     *
+     * @param {Event} e
+     */
+    comboChange(e) {
+      let newVal = e.target.value.toLowerCase();
+      let ok = false;
+
+      if (newVal.trim() !== '') {
+        for (let a = 0; a < this.usableOptions.length; a += 1) {
+          const option = this.usableOptions[a];
+
+          if ((option.label.toLowerCase().includes(newVal) || option.value.toLowerCase().includes(newVal))) {
+            newVal = option.label;
+            ok = true;
+            break;
+          }
+        }
+      }
+
+      newVal = (ok === true)
+        ? newVal
+        : false;
+
+      this.handleChangeShared(e, newVal);
+    },
+
     /**
      * Handle updating state and emitting events from both `blur`
      * and `change` events for both <SELECT> and <INPUT type=radio>
@@ -451,6 +555,30 @@ export default {
       return (option.value == this.value) // eslint-disable-line
         ? valueAttr
         : undefined;
+    },
+
+    /**
+     * Handle keyup events from text input
+     *
+     * @param {Event} e
+     */
+    filterList(e) {
+      const newVal = e.target.value.toLowerCase();
+
+      this.filteredOptions = this.usableOptions.filter(
+        (option) => (option.label.toLowerCase().includes(newVal) || option.value.toLowerCase().includes(newVal))
+      ).map(getLabels);
+
+      const len = this.filteredOptions.length;
+
+      if (len === 0) {
+        // there are no options do error handling.
+        this.$emit('invalid', this.invalid);
+      }
+
+      if (newVal.trim() === '') {
+        this.filteredOptions = this.usableOptions.map(getLabels);
+      }
     },
 
     /**
@@ -534,31 +662,19 @@ export default {
       // Make sure options are useable
       let options = normaliseOptions(this.options, this.currentValue);
 
-      options = (this.radio === false && this.useEmpty === true && typeof this.emptyTxt === 'string' && this.emptyTxt !== '')
+      options = (this.renderType === 'select' && this.useEmpty === true && typeof this.emptyTxt === 'string' && this.emptyTxt !== '')
         ? [{ value: '', label: this.emptyTxt }, ...options]
         : options;
 
       // Give each radio option a unique ID
-      this.usableOptions = (this.radio === true)
+      this.usableOptions = (this.renderType === 'radio')
         ? options.map(setOptionIDs(this.fieldId))
         : options;
-    },
 
-    /**
-     * Make sure all the boolean attributes match current state
-     */
-    updateBools() {
-      this.radio = isBoolTrue(this.isRadio);
-
-      this.disabled = isBoolTrue(this.isDisabled);
-      this.readonly = isBoolTrue(this.isReadonly);
-      this.required = isBoolTrue(this.isRequired);
-      this.useEmpty = (isBoolTrue(this.noNonEmpty) === false || this.currentValue === '');
-
-      // Get the string value for the selected item.
-      this.valueAttr = (this.radio === true)
-        ? 'checked'
-        : 'selected';
+      if (this.renderType === 'combo') {
+        // show all the options available until user starts typing
+        this.filteredOptions = this.usableOptions.map(getLabels);
+      }
     },
 
     /**
@@ -583,7 +699,23 @@ export default {
   beforeMount() {
     this.setCurrentValue();
 
-    this.updateBools();
+    if (typeof this.type === 'string') {
+      const type = this.type.replace(/[^a-z]+/ig, '').toLowerCase();
+
+      if (type === 'radio' || type === 'select') {
+        this.renderType = type;
+      } else if (type.includes('type') || type.includes('search') || type.includes('combo')) {
+        this.renderType = 'combo';
+      }
+    }
+
+    this.useEmpty = (isBoolTrue(this.noNonEmpty) === false || this.currentValue === '');
+
+    // Get the string value for the selected item.
+    this.valueAttr = (this.renderType === 'radio')
+      ? 'checked'
+      : 'selected';
+
     this.setUsableOptions();
   },
 
@@ -688,6 +820,48 @@ export default {
     }
   }
 
+  &--combo {
+    > input {
+      appearance: none;
+      background-color: transparent;
+      border: none;
+      color: $dark-grey;
+      cursor: text;
+      display: block;
+      font-size: 1.1rem;
+      line-height: 1.5rem;
+      outline: none;
+      padding: 0.6rem 0.8rem 0.5rem;
+      width: 100%;
+
+      &::-ms-expand {
+        display: none;
+      }
+    }
+
+    > .material-icons {
+      color: $light-grey-para;
+      font-size: 1.7rem;
+      position: absolute;
+      top: 50%;
+      right: -0.35rem;
+      transform: translate(-50%, -50%);
+    }
+
+    &::after {
+      display: none;
+    }
+  }
+
+  option {
+    background-color: $white;
+    font-weight: normal;
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+}
+
+datalist {
   option {
     background-color: $white;
     font-weight: normal;

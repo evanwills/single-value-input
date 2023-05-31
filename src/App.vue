@@ -7,15 +7,26 @@
                       error-msg="Bad user input"
                       help-txt="This is some useful info about 'First field'"
                       :attributes="txtInpAttr" />
-    <SingleValueInput field-id="password-field"
+    <SingleValueInput error-msg="Please enter a valid password"
+                      field-id="password-field"
                       label="Password"
-                      type="password"
+                      no-toggle
                       required
-                      error-msg="Please enter a valid password">
-      <template v-slot:help>
+                      type="password">
+      <template #help>
         <p>You need to enter your current password to change it. If you're not sure what your password is, you can <a href="https://www.thesmithfamily.com.au/forgot-password">reset your password</a> via email.</p>
       </template>
     </SingleValueInput>
+    <SingleValueInput :custom-validation="validPasswd"
+                      error-msg="Please enter a valid password"
+                      field-id="password2-field"
+                      help-txt="Please enter a password with at least 8 characters and no more than 32 characters. Your password must include at least one number and or special character"
+                      required
+                      help-first
+                      label="Password"
+                      min-length="8"
+                      max-length="32"
+                      type="password" />
     <SingleValueInput field-id="number-field"
                       label="Number field"
                       type="number"
@@ -36,17 +47,18 @@
                       :attributes="badDateInpAttr" />
     <SingleValueInput field-id="datetime-field"
                       label="Date-time field label"
-                      type="datetime-local"
-                      :attributes="dateTimeInpAttr" />
+                      min-val="1979-01-29T09:00:00+12:00"
+                      max-val="2028-11-16T15:10:00+11:00"
+                      type="datetime-local" />
     <SingleValueInput field-id="time-field"
                       label="Date-time field label"
-                      type="datetime-local"
-                      :attributes="dateTimeInpAttr" />
+                      type="datetime-local" />
     <SingleValueInput field-id="time-field"
                       label="Time of day field"
-                      type="time"
+                      min-val="08:30:00"
+                      max-val="17:30:00"
                       required
-                      :attributes="dateTimeInpAttr">
+                      type="time">
       <template #error>
         <p>This some funcky error message with a <a href="https://vuejs.org/guide/components/slots.html">link</a></p>
       </template>
@@ -81,20 +93,25 @@
                       value="2" />
     <SingleValueInput empty-txt="-- please choose --"
                       error-msg="Please choose an option"
+                      help-txt="This help text goes first"
                       field-id="select-field"
+                      help-first
                       label="Select field label"
                       :options="multiOptions"
                       required
-                      type="select" />
-    <SingleValueInput empty-txt="-- please choose --"
-                      error-msg="Please choose an option"
-                      field-id="select-field-default"
-                      label="Select field with default"
-                      no-non-empty
+                      type="select">
+    </SingleValueInput>
+    <SingleValueInput error-msg="Please choose an option"
+                      field-id="conbo-field-default"
+                      label="What's your favourite option"
                       :options="multiOptions"
                       required
-                      type="select"
-                      value="3" />
+                      type="combobox"
+                      value="3">
+      <template #help>
+        <p>We need to know your favourite option so we can try and give it to you.</p>
+      </template>
+    </SingleValueInput>
   </ul>
 </template>
 
@@ -133,6 +150,16 @@ const dateTimeInpAttr = {
   max: '2028-11-16T15:10:00+11:00',
 };
 const textareaAttr = { rows: 11, };
+
+const validPasswd = (input) => {
+  const matches = input.match(/[\[\]\\\/\`\-0-9_+=!@#$%^&*(){}|:";'<>?,.~ ]/g);
+
+  if (matches !== null && matches.length > 1) {
+    return true;
+  }
+
+  return 'Your password must include at least 2 non alphabetical characters';
+}
 </script>
 
 <style scoped>

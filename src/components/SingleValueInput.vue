@@ -10,19 +10,22 @@
       <span class="single-val-input__required">{{ requiredTxt }}</span>
       <span :class="errorIconClass">priority_high</span>
     </label>
+    <div v-if="(hasHelp === true && helpFirst === true)" :class="helpClass" :id="getID('help')">
+      <slot name="help"><p>{{ helpTxt }}</p></slot>
+    </div>
     <div :class="inputClass">
       <RadioSelectInput v-if="isSelect"
                         :field-id="fieldId"
                         :access-key="accessKeyAttr"
                         :empty-txt="emptyTxt"
                         :help-ids="describedByIDs"
-                        :is-radio="isRadio"
                         :is-required="required"
                         :is-readonly="readonly"
                         :is-disabled="disabled"
                         :no-non-empty="noNonEmpty"
                         :options="options"
                         :tab-index="tabindex"
+                        :type="typeAttr"
                         :value="currentValue"
                         v-on:blur="selectChanged($event)"
                         v-on:change="selectChanged($event)"
@@ -74,7 +77,7 @@
               v-on:keydown="genericHandler($event)"
               v-on:keypress="genericHandler($event)"
               v-on:keyup="genericHandler($event)" />
-      <button v-if="type === 'password' && showPassword === false"
+      <button v-if="type === 'password' && noToggle === false && showPassword === false"
               class="password-toggle"
               v-on:click="togglePassword($event)">
         <span class="material-icons">visibility</span>
@@ -93,8 +96,8 @@
         <div v-if="extraError !== ''">{{ extraError }}</div>
       </div>
     </div>
-    <div v-if="hasHelp === true" class="single-val-input__help" :id="getID('help')">
-      <slot name="help">{{ helpTxt }}</slot>
+    <div v-if="(hasHelp === true && helpFirst === false)" :class="helpClass" :id="getID('help')">
+      <slot name="help"><p>{{ helpTxt }}</p></slot>
     </div>
   </li>
 </template>
@@ -103,9 +106,9 @@
 import RadioSelectInput from './RadioSelectInput.vue';
 
 const inputTypes = [
-  'color', 'date', 'datetime-local', 'email', 'month', 'number',
-  'password', 'radio', 'range', 'select', 'tel', 'text', 'textarea',
-  'time', 'url', 'week',
+  'color', 'combo', 'date', 'datetime-local', 'email', 'month',
+  'number', 'password', 'radio', 'range', 'select', 'tel', 'text',
+  'textarea', 'time', 'url', 'week',
 ];
 
 const hasLimit = (type) => {
@@ -115,7 +118,7 @@ const hasLimit = (type) => {
 };
 
 const hasCharLimit = (type) => {
-  const areLimited = ['email', 'tel', 'text', 'textarea', 'url'];
+  const areLimited = ['email', 'password', 'tel', 'text', 'textarea', 'url'];
 
   return (areLimited.indexOf(type) > -1);
 };
@@ -125,7 +128,7 @@ const temporal = ['date', 'datetime-local', 'time'];
 export default {
   name: 'single-value-input',
 
-  emits: ['change', 'isvalid', 'keydown', 'keypress', 'keyup'],
+  emits: ['blur', 'change', 'focus', 'invalid', 'keydown', 'keypress', 'keyup'],
 
   props: {
     /**
@@ -212,6 +215,13 @@ export default {
     fieldId: { type: String, required: true },
 
     /**
+     * Whether or not to render help text before or after input field
+     *
+     * @property {boolean} helpFirst
+     */
+    helpFirst: { type: Boolean, required: false, default: false },
+
+    /**
      * Help text to show the user to make the purpose or
      * requirements of the field clear
      *
@@ -266,7 +276,8 @@ export default {
     /**
      * Minimum value allowed
      *
-     * (used for date, datetime-local, number, range & time type input fields )
+     * (used for date, datetime-local, number, range & time type
+     * input fields)
      *
      * @property {number|string} maxVal
      */
@@ -279,6 +290,14 @@ export default {
      * @property {boolean} noNonEmpty
      */
     noNonEmpty: { type: Boolean, required: false, default: false },
+
+    /**
+     * Whether or not to allow user to toggle password visibility
+     * for password inputs
+     *
+     * @property {boolean} noNonEmpty
+     */
+    noToggle: { type: Boolean, required: false, default: false },
 
     /**
      * List of options available in a <SELECT> or <INPUT type="radio">
@@ -367,6 +386,7 @@ export default {
      * * email
      * * month
      * * number
+     * * password
      * * radio
      * * range
      * * select
@@ -518,6 +538,15 @@ export default {
       return `material-icons ${output}`;
     },
 
+    helpClass() {
+      const tmp = 'single-val-input__help';
+      const tail = (this.helpFirst === true)
+        ? 'before'
+        : 'after';
+
+      return `${tmp} ${tmp}--${tail}`;
+    },
+
     /**
      * List of class names to add to the input field
      *
@@ -551,7 +580,7 @@ export default {
     inputFieldClass() {
       const tmp = 'single-val-input__input';
 
-      return (this.type !== 'password')
+      return (this.type !== 'password' || this.noToggle === true)
         ? tmp
         : `${tmp} ${tmp}--password`;
     },
@@ -569,11 +598,11 @@ export default {
      * Test whether or not the rendered field is a select dropdown
      * field or radio input group.
      *
-     * @returns {boolean} TRUE if type is "select" or "radio"
+     * @returns {boolean} TRUE if type is "select", "radio" or "combo"
      *                    FALSE otherwise
      */
     isSelect() {
-      return (this.type === 'select' || this.type === 'radio');
+      return (this.type === 'select' || this.type === 'radio' || this.type === 'combo');
     },
 
     /**
@@ -591,8 +620,8 @@ export default {
      * @returns {number|undefined}
      */
     maxAttr() {
-      return (hasLimit(this.type) && typeof this.max !== 'undefined')
-        ? this.max
+      return (hasLimit(this.type) && typeof this.maxVal !== 'undefined')
+        ? this.maxVal
         : undefined;
     },
 
@@ -663,8 +692,8 @@ export default {
 
     requiredTxt() {
       return (this.required === true)
-        ? ''
-        : ' (optional)';
+        ? ' (required)'
+        : '';
     },
 
     /**
@@ -756,7 +785,7 @@ export default {
 
       if (this.showError === false && typeof this.customValidation === 'function') {
         this.extraError = this.customValidation(this.currentValue);
-        this.showError = (this.extraError !== false);
+        this.showError = (typeof this.extraError === 'string' && this.extraError.trim() !== '');
       }
 
       if (this.showError === false) {
@@ -987,6 +1016,14 @@ $border-rad: 0.3rem;
       padding-top: 0;
     }
 
+    * {
+      color: $white;
+
+      a {
+        color: $tsf-bright-blue;
+      }
+    }
+
     > :last-child {
       margin-bottom: 0;
       padding-bottom: 0;
@@ -1019,15 +1056,18 @@ $border-rad: 0.3rem;
 
   &__help {
     padding-top: 0.5rem;
+    font-size: 0.875rem;
 
     > :first-child {
       margin-top: 0;
       padding-top: 0;
     }
 
-    > :last-child {
-      margin-bottom: 0;
-      padding-bottom: 0;
+    &--after {
+      > :last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
     }
   }
 
