@@ -38,6 +38,7 @@
   * [help](#help)
   * [error](#error)
 * [Events](#events)
+* [`RadioSelectInput`](README.RadioSelectInput.md)
 
 ---
 ## Introduction
@@ -57,6 +58,7 @@ top of native input validation (see
 All these elements are wrapped within an `<LI>` element.
 
 ## Examples
+
 ### Basic usage
 
 ```html
@@ -701,8 +703,8 @@ entered/selected.
 `SingleValueInput` will re-emit all other standard DOM events an
 `<INPUT>`, `<SELECT>` or `<TEXTAREA>` field emits along with the
 Event object that was initially emitted by the original element.
-This is so the client code watch for any events it is interested in
-and then apply any additional logic based on a standard event.
+This is so the client code can watch for any events it is interested
+in and then apply any additional logic based on a standard event.
 
 ---
 

@@ -247,12 +247,12 @@ export default {
     noNonEmpty: { type: Boolean, required: false, default: false },
 
     /**
-     * List of options available in a <SELECT> or <INPUT type="radio">
-     * field
+     * List of options available in a `<SELECT>`, `<INPUT type="radio">`
+     * or `<INPUT type="text" role="combobox">` field
      *
-     * > __Note:__ If `type` is "select" or "radio" and there are
-     * >           less than two options in the in the `options`
-     * >           property, an error will be thrown
+     * > __Note:__ If `type` is "select", "radio" or "combobox" and
+     * >           there areless than two options in the in the
+     * >           `options` property, an error will be thrown.
      *
      * @property {<{key: string, value: string}>[]} options
      */
