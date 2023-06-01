@@ -43,9 +43,9 @@
 ---
 ## Introduction
 
-`<SingleValueInput>` makes it simple to add new, nicely styled and
-accessible single value inputs (i.e. not checkboxes, multi select
-fields or file inputs) to a form.
+`<SingleValueInput>` is a Vue component that makes it simple to add 
+nicely styled and accessible single value inputs (i.e. not 
+checkboxes, multi select fields or file inputs) to a form.
 
 It renders the field's label, the field itself, error message
 (if appropriate) and help text (if supplied).
@@ -147,42 +147,53 @@ This could be useful for:
 
 ```html
 <script>
+/**
+ * Check if the input has the right number of words and that none of 
+ * those words are inappropriate
+ * 
+ * @param {string} input
+ */
 const badInput = (input) => {
-  // check the word count
+  // Make sure words are all lowercase so we don't miss any that 
+  // might be capitalised
   const tmp = input.trim().toLowerCase();
-  const words = tmp.match(/\w+\W+/g);
+  // Find all the words
+  const words = tmp.match(/\w+\W*/g);
   if (words === null || words.length < 5) {
+    // Not enough words
     return 'You must enter at least 5 words';
   } else if (words.length > 100) {
+    // Too many words
     return 'Please limit your word count to 100 words';
   }
   const expletives = ['badword', 'rudeword', 'inappropriate phrase']
   for (let a = 0; a < expletives.length; a += 1) {
     if (tmp.includes(expletives[a])) {
+      // found Naughty words
       return 'Please do not use offensive or inapproptiate language';
     }
   }
   return '';
 };
 /**
- * Strip invalid and excess characters from input value
+ * Strip invalid and excess characters from input value then truncate 
+ * it if it's over 500 characters long
  *
  * @param {Event} event keyup event from `<input>` or `<textarea>`
  *                field
- *
  * @returns {void}
  */
 const sanitiseMsg = (event) => {
-  const regex = /[^a-zA-Z0-9\r\n .,:;?!$%@()'/-+=]+/;
+  const regex = /[^a-z0-9\r\n .,:;?!$%@()'/+=-]+/ig;
   event.target.value = event.target.value.replace(regex, '').substring(0, 500);
 };
 </script>
 <SingleValueInput
-  custom-validation="badInput"
+  :custom-validation="badInput"
   field-id="message-txt"
   label="Message"
   type="textarea"
-  pattern="^[a-zA-Z0-9\r\n .,:;?!$%@()'/-+=]{15,500}$"
+  pattern="^[a-zA-Z0-9\r\n .,:;?!$%@()'/+=-]{15,500}$"
   :tabindex="isVisible"
   v-on:change="messageChange($event)"
   v-on:keyup="sanitiseMsg($event)" />
