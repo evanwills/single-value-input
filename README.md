@@ -1,8 +1,39 @@
 # `<SingleValueInput>`
 
 * [Introduction](#introduction)
-* [Basic usage](#basic-usage)
+* [Examples](#examples)
+  * [Basic usage](#basic-usage)
+  * [Full usage](#full-usage-text-input)
 * [Attributes](#attributes)
+  * Required attributes
+    * [`field-id`](#field-id)
+    * [`label`](#label)
+    * [`type`](#type)
+  * Optional attributes
+    * [`accesskey`](#accesskey) _(standard HTML)_
+    * [`custom-validation`](#custom-validation)
+    * [`disabled`](#disabled) _(standard HTML)_
+    * [`empty-txt`](#empty-txt)
+    * [`error-msg`](#error-msg)
+    * [`external-invalid`](#external-invalid)
+    * [`extra-desc-by-ids`](#extra-desc-by-ids)
+    * [`help-first`](#help-first)
+    * [`max-length`](#max-length) _(`maxlength` standard HTML)_
+    * [`max-val`](#max-val) _(`max` standard HTML)_
+    * [`min-length`](#min-length) _(`minlength` standard HTML)_
+    * [`min-val`](#min-val) _(`min` standard HTML)_
+    * [`no-non-empty`](#no-non-empty)
+    * [`no-toggle`](#no-toggle)
+    * [`pattern`](#pattern) _(standard HTML)_
+    * [`placeholder`](#placeholder) _(standard HTML)_
+    * [`readonly`](#readonly) _(standard HTML)_
+    * [`required`](#required) _(standard HTML)_
+    * [`rows`](#rows) _(standard HTML)_
+    * [`spell-check`](#spell-check) _(`spellcheck` standard HTML)_
+    * [`step`](#step) _(standard HTML)_
+    * [`tabindex`](#tabindex) _(standard HTML)_
+    * [`type`](#type)
+    * [`value`](#value)
 * [Slots](#slots)
   * [help](#help)
   * [error](#error)
@@ -18,29 +49,53 @@ fields or file inputs) to a form.
 It renders the field's label, the field itself, error message
 (if appropriate) and help text (if supplied).
 
-`<SingleValueInput>` exposes all the features of standard HTML inputs 
-via attributes along with some extra goodies like extra validation on 
-top of native input validation (see 
+`<SingleValueInput>` exposes all the features of standard HTML inputs
+via attributes along with some extra goodies like extra validation on
+top of native input validation (see
 [`custom-validation`](#custom-validation) for more info).
 
 All these elements are wrapped within an `<LI>` element.
 
-## Basic usage
+## Examples
+### Basic usage
 
 ```html
+<!--
+ ! (Not required, no validation, no tabindex control)
+ ! This should only be used for fields that are never hidden.
+ ! -->
 <SingleValueInput
-  error-msg="Please enter a first name"
-  field-id="first-name"
-  max-length="100"
-  pattern="^[^\w \-.\']+$"
-  placeholder="e.g. Jo"
-  required
-  :tabindex="tabIndex"
+  field-id="middle-name"
+  label="Middle name"
   type="text"
-  label="First name"
   value="Gabriel"
-  v-on:change="firstNameChange($event)"
-  v-on:keyup="sanitiseName($event)"></SingleValueInput>
+  v-on:change="firstNameChange($event)" />
+```
+
+### Full usage (text input)
+
+```html
+<!--
+ ! Tabindex control is required when a field hidden some of the time
+ !
+ ! NOTE: `tabIndexVal` must be 0 when the field is visible and -1
+ !       when the field is hidden. This prevents keyboard navigation 
+ !       users from getting lost in hidden inputs
+ ! -->
+<SingleValueInput
+  error-msg="First name must be no longer than 100 characters and only contain letters, commas, hyphens, spaces and/or appostrophies."
+  field-id="first-name"
+  help-txt="We only use your first name when sending you emails"
+  label="First name"
+  max-length="100"
+  min-length="2"
+  pattern="^[a-zA-Z][a-zA-Z ,'-]+$"
+  placeholder="e.g. Charlie"
+  required
+  :tabindex="tabIndexVal"
+  type="text"
+  value="Gabriel"
+  v-on:change="firstNameChange($event)" />
 ```
 
 ## Attributes
@@ -54,6 +109,20 @@ All these elements are wrapped within an `<LI>` element.
 Keyboard short cut key (using "alt + shift + [accesskey]") to
 allow userto go directly to the input field
 
+> __Note:__ `accesskey` should only be used when a field is always
+>           present and visible on a page and is likely to be
+>           frequently used. Like login fields.
+
+```html
+<SingleValueInput
+  accesskey="n"
+  field-id="username"
+  label="Username"
+  type="text"
+  pattern="^[a-zA-Z0-9]{5,30}$"
+  v-on:change="usernameChange($event)" />
+```
+
 (See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/accesskey)
 for more info)
 
@@ -64,15 +133,62 @@ for more info)
 | _optional_ | _{function}_ | null    | `this.customValidation` |
 
 A function that returns a string error message if input is
-not valid. Or, an empty string if input is valid.
+not valid. Anything other than a non-empty string will be interpreted
+as input is valid.
 
-This could be useful for when you'd like to have a maximum word count
-on your textarea input. Or more complex validation of user email
-addresses.
+This could be useful for:
+* When you'd like to have a maximum word count on your textarea input.<br />
+  Or
+* more complex validation of user email addresses.<br />
+  Or
+* If you wish to check for expletives or malicious content.
 
-```typescript
-(input : string|number) : string|boolean;
+```html
+<script>
+const badInput = (input) => {
+  // check the word count
+  const tmp = input.trim().toLowerCase();
+  const words = tmp.match(/\w+\W+/g);
+  if (words === null || words.length < 5) {
+    return 'You must enter at least 5 words';
+  } else if (words.length > 100) {
+    return 'Please limit your word count to 100 words';
+  }
+  const expletives = ['badword', 'rudeword', 'inappropriate phrase']
+  for (let a = 0; a < expletives.length; a += 1) {
+    if (tmp.includes(expletives[a])) {
+      return 'Please do not use offensive or inapproptiate language';
+    }
+  }
+  return '';
+};
+/**
+ * Strip invalid and excess characters from input value
+ *
+ * @param {Event} event keyup event from `<input>` or `<textarea>`
+ *                field
+ *
+ * @returns {void}
+ */
+const sanitiseMsg = (event) => {
+  const regex = /[^a-zA-Z0-9\r\n .,:;?!$%@()'/-+=]+/;
+  event.target.value = event.target.value.replace(regex, '').substring(0, 500);
+};
+</script>
+<SingleValueInput
+  custom-validation="badInput"
+  field-id="message-txt"
+  label="Message"
+  type="textarea"
+  pattern="^[a-zA-Z0-9\r\n .,:;?!$%@()'/-+=]{15,500}$"
+  :tabindex="isVisible"
+  v-on:change="messageChange($event)"
+  v-on:keyup="sanitiseMsg($event)" />
 ```
+
+> __Note:__ It's possible for this validation to be bypassed in the
+>           browser so all validation __*must*__ be duplicated on the
+>           server to ensure the user doesn't submit bad data.
 
 ### `disabled`
 
@@ -82,6 +198,26 @@ addresses.
 
 Whether or not the field is disabled
 (i.e. user is prevented from interacting with the field)
+
+A field should only be disabled when it is useful for the user to
+see that the field is there but they cannot enter anything until
+something changes.
+
+e.g. if you have primary and secondary email
+fields you would disable the secondary field until the primary
+fields is populated and validate
+
+`disabled` is most useful for buttons but is included here because
+it's easy to implement and helps ensure versatility of this component.
+
+```html
+<SingleValueInput
+  field-id="email2"
+  label="Secondary email"
+  type="email"
+  :disabled="invalidEmail1"
+  v-on:change="email2Change($event)" />
+```
 
 (see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#disabled),
 [MDN `<select>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select#disabled) &
@@ -104,6 +240,28 @@ a select field is the default. To prevent the user from submitting a
 value that may not be relevant, it's common practice to have an
 [`empty`](#empty-txt) option as the first item in the select list.
 
+
+```html
+<script>
+const colorOptions = [
+  { value: 'blue', label: 'Bright blue' },
+  { value: 'red', label: 'Hot red' },
+  { value: 'pink', label: 'Bubblegum pink' },
+  { value: 'brown', label: 'Fecal brown' },
+  { value: 'black', label: 'Cool black' },
+  { value: 'beige', label: 'Party beige' },
+]
+</script>
+
+<SingleValueInput
+  empty-txt="-- please select a colour --"
+  field-id="colour"
+  label="Favourite colour"
+  type="select"
+  :options="colorOptions"
+  v-on:change="colourChange($event)" />
+```
+
 > __Note:__ if [`no-non-empty`](#no-non-empty) is also set and the
 >           default [`value`](#value) is not empty this will be
 >           ignored.
@@ -116,6 +274,23 @@ value that may not be relevant, it's common practice to have an
 
 Error message to show the user when the value of the field is
 invalid
+
+> __Note:__ If the field is marked as `required` an empty value will
+>           also cause the error message to show.
+
+```html
+<SingleValueInput
+  error-msg="Names must be between 2 and 100 charachters can only include alphabetical characters, spaces, fullstops, hyphens and apostrophes"
+  field-id="first-name"
+  label="First name"
+  max-length="100"
+  min-length="2"
+  pattern="^[a-zA-Z .'-]$"
+  required
+  :tabindex="isVisible"
+  type="text"
+  v-on:change="firstnameChange($event)" />
+```
 
 > __Note:__ If you need to include HTML (e.g. a link or bullet points) in the
 >           error message use the ["error" slot](#error) instead.
@@ -131,8 +306,20 @@ Whether or not this field has been marked as invalid due to
 
 e.g. User must enter either a mobile phone number or a land
 line number.
-If both are empty then both fields must be marked as
+If both are empty or invalid, then both fields must be marked as
 invalid.
+
+```html
+<SingleValueInput
+  error-msg="Please enter a valid Australian mobile phone number"
+  external-invalid
+  field-id="mobile"
+  label="Mobile phone number"
+  pattern="^04[0-9]{8}$"
+  :tabindex="isVisible"
+  type="tel"
+  v-on:change=mobileChange($event)" />
+```
 
 ### `extra-desc-by-ids`
 
@@ -140,12 +327,30 @@ invalid.
 |------------|------------|------------|-----------------------|
 | _optional_ | _{string}_ | "" (empty) | `this.extraDescByIds` |
 
+Space seperated list of IDs for blocks of content that help give
+more information about this field.
+
 If the field needs to be associated with any extra blocks of
 text, this provides the IDs for those other blocks of text
 
 If `externalInvalid` is TRUE, this provides a way to link the
 field with the information about why the field has been marked
 as invalid.
+
+```html
+<SingleValueInput
+  error-msg="Please enter a valid Australian mobile phone number"
+  extra-desc-by-ids="no-phone-error"
+  external-invalid
+  field-id="mobile"
+  label="Mobile phone number"
+  pattern="^04[0-9]{8}$"
+  :tabindex="isVisible"
+  type="tel"
+  v-on:change=mobileChange($event)" />
+
+<p class="error-msg" id="no-phone-error">You must supply one or more of the following: Mobile phone number, Home phone number or work phone number</p>
+```
 
 (See [MDN](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-describedby) & [WAI ARIA](https://w3c.github.io/aria/#aria-describedby) for more info)
 
@@ -160,7 +365,17 @@ ID of the field being rendered
 Used to link the field to its label, error message and help
 text
 
-> __Note:__ If fieldId is undefined or empty, an error will
+```html
+<SingleValueInput
+  field-id="mobile"
+  label="Mobile phone number"
+  pattern="^04[0-9]{8}$"
+  :tabindex="isVisible"
+  type="tel"
+  v-on:change=mobileChange($event)" />
+```
+
+> __Note:__ If `field-id` is undefined or empty, an error will
 be thrown
 
 ### `help-first`
@@ -452,6 +667,7 @@ Allowed types are:
 
 Predefined value for the field.
 
+---
 ## Slots
 
 ### `help`
@@ -462,7 +678,7 @@ of the input field.
 This should only be used when your help content needs to contain
 HTML (e.g. links or bullet points).
 
-If plain text is all you need for your help text, use the 
+If plain text is all you need for your help text, use the
 [`help-txt` attribute](#help-txt) instead.
 
 ### `error`
@@ -472,9 +688,10 @@ Error HTML to show user if their input is invalid (or empty).
 This should only be used when your error message needs to contain
 HTML (e.g. links or bullet points).
 
-If plain text is all you need for your error message, use the 
+If plain text is all you need for your error message, use the
 [`error-msg` attribute](#error-msg) instead.
 
+---
 ## Events
 
 The only event that SingleValueInput deliberately emits is `change`
@@ -484,8 +701,10 @@ entered/selected.
 `SingleValueInput` will re-emit all other standard DOM events an
 `<INPUT>`, `<SELECT>` or `<TEXTAREA>` field emits along with the
 Event object that was initially emitted by the original element.
-This is so the client code can apply any additional logic based on a
-standard event.
+This is so the client code watch for any events it is interested in
+and then apply any additional logic based on a standard event.
+
+---
 
 See info about [Vite and VueJS](README.vite.md)
 

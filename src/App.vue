@@ -5,8 +5,7 @@
                       type="text"
                       required
                       error-msg="Bad user input"
-                      help-txt="This is some useful info about 'First field'"
-                      :attributes="txtInpAttr" />
+                      help-txt="This is some useful info about 'First field'" />
     <SingleValueInput error-msg="Please enter a valid password"
                       field-id="password-field"
                       label="Password"
@@ -28,12 +27,13 @@
                       max-length="32"
                       type="password" />
     <SingleValueInput field-id="number-field"
+                      min-length="8"
+                      max-length="32"
                       label="Number field"
                       type="number"
                       required
                       error-msg="Must be a number between 10 and 40"
-                      help-txt="Pick a number, any number"
-                      :attributes="numInpAttr" />
+                      help-txt="Pick a number, any number" />
     <SingleValueInput field-id="date-field"
                       label="Date (only) field label"
                       type="date"
