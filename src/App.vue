@@ -1,11 +1,11 @@
 <template>
   <ul>
-    <SingleValueInput field-id="text-field"
+    <SingleValueInput error-msg="Bad user input"
+                      field-id="text-field"
+                      help-txt="This is some useful info about 'First field'"
                       label="Basic text field"
-                      type="text"
                       required
-                      error-msg="Bad user input"
-                      help-txt="This is some useful info about 'First field'" />
+                      type="text" />
     <SingleValueInput error-msg="Please enter a valid password"
                       field-id="password-field"
                       label="Password"
@@ -36,10 +36,11 @@
                       help-txt="Pick a number, any number" />
     <SingleValueInput field-id="date-field"
                       label="Date (only) field label"
+                      min-val="1979-01-29T09:00:00+12:00"
+                      max-val="2028-11-16T15:10:00+11:00"
                       type="date"
                       required
-                      error-msg="Please enter today's date"
-                      :attributes="dateInpAttr" />
+                      error-msg="Please enter today's date" />
     <SingleValueInput field-id="bad-date-field"
                       label="Bad Date (only) field label"
                       type="date"

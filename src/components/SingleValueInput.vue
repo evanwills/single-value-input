@@ -106,7 +106,7 @@
 import RadioSelectInput from './RadioSelectInput.vue';
 
 const inputTypes = [
-  'color', 'combo', 'date', 'datetime-local', 'email', 'month',
+  'color', 'combobox', 'date', 'datetime-local', 'email', 'month',
   'number', 'password', 'radio', 'range', 'select', 'tel', 'text',
   'textarea', 'time', 'url', 'week',
 ];
@@ -135,6 +135,10 @@ export default {
      * Keyboard short cut key (using "alt + shift + [accesskey]") to
      * allow user to go directly to the input field
      *
+     * > __Note:__ `accesskey` should only be used when a field is
+     * >           always present and visible on a page and is
+     * >           likely to be frequently used. Like login fields.
+     *
      * @property {string} accesskey
      */
     accesskey: { type: String, required: false, default: '' },
@@ -143,6 +147,19 @@ export default {
      * A function that returns a string error message if input is
      * not valid. Or, an empty string if input is valid.
      *
+     * This could be useful for:
+     * * When you'd like to have a maximum word count on your
+     *   textarea input.
+     *   Or
+     * * more complex validation of user email addresses.
+     *   Or
+     * * If you wish to check for expletives or malicious content.
+     *
+     * > __Note:__ It's possible for this validation to be bypassed
+     * >           in the browser so all validation __*must*__ be
+     * >           duplicated on the server to ensure the user
+     * >           doesn't submit bad data.
+     *
      * @property {Function} customValidation
      */
     customValidation: { type: Function, required: false, default: null },
@@ -150,6 +167,19 @@ export default {
     /**
      * Whether or not the field is disabled
      * (i.e. user is prevented from interacting with the field)
+
+     * A field should only be disabled when it is useful for the user to
+     * see that the field is there but they cannot enter anything until
+     * something changes.
+     *
+     * e.g. if you have primary and secondary email
+     * fields you would disable the secondary field until the primary
+     * fields is populated and validate
+     *
+     * (see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#disabled),
+     * [MDN `<select>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select#disabled) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#disabled)
+     * for more info)
      *
      * @property {boolean} disabled
      */
@@ -159,7 +189,17 @@ export default {
      * For select fields where no default is currently set, this
      * provides an indicator that the user must choose an option
      *
-     * (Is inserted as the first item in a select list)
+     * (This text is inserted as the first item in a select list)
+     *
+     * Without user interaction in a `<select>` input, the first
+     * option in a select field is the default. To prevent the
+     * user from submitting a value that may not be relevant, it's
+     * common practice to have an `empty` option as the first item
+     * in the select list.
+     *
+     * > __Note:__ if [`no-non-empty`](#no-non-empty) is also set
+     * >           and the default [`value`](#value) is not empty
+     * >           this will be ignored.
      *
      * @property {string} emptyTxt
      */
@@ -169,8 +209,11 @@ export default {
      * Error message to show the user when the value of the field is
      * invalid
      *
-     * > __Note:__ If you need to include HTML (e.g. a link) in the
-     * >           error message use the "error" slot instead.
+     * > __Note:__ If the field is marked as `required` an empty
+     * >           value will also cause the error message to show.
+     *
+     * > __Note also:__ If you need to include HTML (e.g. a link)
+     * >           in the error message use the "error" slot instead.
      *
      * @property {string} errorMsg
      */
@@ -196,6 +239,11 @@ export default {
      * If `externalInvalid` is TRUE, this provides a way to link the
      * field with the information about why the field has been marked
      * as invalid.
+     *
+     * (See
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-describedby) &
+     * [WAI ARIA](https://w3c.github.io/aria/#aria-describedby)
+     * for more info)
      *
      * @property {string} extraDescByIds
      */
@@ -240,15 +288,24 @@ export default {
      * > __Note:__ If label is undefined or empty, an error will
      * >           be thrown
      *
+     * (See
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label)
+     * for more info)
+     *
      * @property {string} errorMsg
      */
     label: { type: String, required: true },
 
     /**
-     * Maximum number of characters user can input into this field
+     * Maximum number of characters user can enter into this field
      *
      * Used for email, number, text & url type input fields as well
      * as textarea fields
+     *
+     * (see
+     * [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#maxlength) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#maxlength)
+     * for more info)
      *
      * @property {number} maxLength
      */
@@ -257,7 +314,11 @@ export default {
     /**
      * Maximum value allowed
      *
-     * (used for date, datetime-local, number, range & time type input fields )
+     * (used for date, datetime-local, number, range & time type input fields)
+     *
+     * (See
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#max)
+     * for more info)
      *
      * @property {number|string} maxVal
      */
@@ -269,6 +330,11 @@ export default {
      * Used for email, number, text & url type input fields as well
      * as textarea fields
      *
+     * (see
+     * [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#minlength) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#minlength)
+     * for more info)
+     *
      * @property {number} minLength
      */
     minLength: { required: false },
@@ -279,6 +345,9 @@ export default {
      * (used for date, datetime-local, number, range & time type
      * input fields)
      *
+     * (See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#min)
+     * for more info)
+     *
      * @property {number|string} maxVal
      */
     minVal: { required: false },
@@ -287,6 +356,13 @@ export default {
      * Whether or not to show the empty value if the default value
      * is non-empty
      *
+     * By default, the first option in a select field is the default.
+     * To prevent the user from submitting a value that may not be
+     * relevant. It's common practice to have an `empty` option as
+     * the first item in the select list. This prevents the empty
+     * option from being rendered if there's already a non-empty
+     * default.
+     *
      * @property {boolean} noNonEmpty
      */
     noNonEmpty: { type: Boolean, required: false, default: false },
@@ -294,6 +370,12 @@ export default {
     /**
      * Whether or not to allow user to toggle password visibility
      * for password inputs
+     *
+     * If you want the user to enter a password and you expect their
+     * password to be good, it's likely that (if it is actually good)
+     * the password will be hard to enter. Thus, the user is likely
+     * to make mistakes while typing. This allows the user toggle
+     * whether or not their password is visible or obfuscated.
      *
      * @property {boolean} noNonEmpty
      */
@@ -307,6 +389,32 @@ export default {
      * >           less than two options in the in the `options`
      * >           property, an error will be thrown
      *
+     * Options can have the following structures
+     *
+     * * Array of objects where the first property in the object
+     *   represents what will go in the option's value attribute
+     *   `<option value="">` and the second property will be the
+     *   label/text that's wrapped within the `<option></option>`
+     *   elements
+     *   * either `{ value: {string|number}, label: {string} }`
+     *     or
+     *   * `{ key: {string|number}, value: {string} }`
+     *     or
+     *   * `{ Value: {string|number}, Key: {string} }`
+     * * An array of strings (useful when the option value is the
+     *   same as the option label/text)
+     * * An object where the property name is used as the option's
+     *   *value* attribute `<option value="">` and the property's
+     *   value us use as the label/text that's wrapped within the
+     *   `<option></option>` elements
+     *   e.g. `{ '001': 'First option', '002': 'Option two', '003': 'Number three' }`
+     *
+     * (See
+     * [MDN `<option>`](ttps://developer.mozilla.org/en-US/docs/Web/HTML/Element/option),
+     * [MDN `<select>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select),
+     * [MDN `<datalist>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist)
+     * for more info)
+     *
      * @property {<{key: string, value: string}>[]} options
      */
     options: { type: Array, required: false },
@@ -314,12 +422,22 @@ export default {
     /**
      * JavaScript regular expression for validating string input
      *
+     * (see
+     * [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#pattern) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#pattern)
+     * for more info)
+     *
      * @property {string} pattern
      */
     pattern: { type: String, required: false },
 
     /**
      * Helper text to show inside input field when value is empty
+     *
+     * (see
+     * [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#placeholder) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#placeholder)
+     * for more info)
      *
      * @property {string} placeholder
      */
@@ -329,12 +447,21 @@ export default {
      * Whether or not the field is readonly
      * (i.e. user is prevented from interacting with the field)
      *
+     * (see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#readonly) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#readonly)
+     * for more info)
+     *
      * @property {boolean} readonly
      */
     readonly: { type: Boolean, required: false, default: false },
 
     /**
      * Whether or not the field requres a non-empty value
+     *
+     * (see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#required),
+     * [MDN `<select>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select#required) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#required)
+     * for more info)
      *
      * @property {boolean} required
      */
@@ -343,6 +470,10 @@ export default {
     /**
      * Number of lines in a textarea input
      *
+     * (see
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#rows)
+     * for more info)
+     *
      * @property {number} rows
      */
     rows: { required: false },
@@ -350,6 +481,10 @@ export default {
     /**
      * Whether or not to use built in browser/system spell check
      * functionality
+     *
+     * (see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/text#spellcheck) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#spellcheck)
+     * for more info)
      *
      * @property { type: Boolean, required: false },
      */
@@ -360,6 +495,10 @@ export default {
      *
      * Used for date, datetime-local, number, range & time type
      * input fields.
+     *
+     * (See
+     * [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#step)
+     * for more info)
      *
      * @property {number|string} maxVal
      */
@@ -372,6 +511,12 @@ export default {
      * > __Note:__ If tabindex is not `-1` it will not be rendered
      * >           on the field, instead the browser's default
      * >           tabbing order will be used
+     *
+     * (see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#tabindex),
+     * [MDN `<select>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select#tabindex) &
+     * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#tabindex)
+     * for more info)
+     *
      * @property {number} tabindex
      */
     tabindex: { type: Number, required: false, default: 0 },
@@ -380,22 +525,25 @@ export default {
      * Type of field to be rendered
      *
      * Allowed types are:
-     * * color
-     * * date
-     * * datetime-local
-     * * email
-     * * month
-     * * number
-     * * password
-     * * radio
-     * * range
-     * * select
-     * * tel
-     * * text
-     * * textarea
-     * * time
-     * * url
-     * * week
+     * * [color](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/color)
+     * * [combobox](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/)
+     *   (Text field with fixed set of options. Useful for very long
+     *   option lists - e.g. country list)
+     * * [date](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date)
+     * * [datetime-local](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/datetime-local)
+     * * [email](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/email)
+     * * [month](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/month)
+     * * [number](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/number)
+     * * [password](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/password)
+     * * [radio](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/radio)
+     * * [range](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/range)
+     * * [select](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select)
+     * * [tel](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/tel)
+     * * [text](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/text)
+     * * [textarea](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea)
+     * * [time](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/time)
+     * * [url](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/url)
+     * * [week](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/week)
      *
      * > __Note:__ If the specified type is not one of the above,
      * >           an error will be thrown
@@ -1034,8 +1182,8 @@ $border-rad: 0.3rem;
       border-radius: 50rem;
       color: $white;
       display: inline-block;
-      font-size: 0.75rem;
-      line-height: 0.77rem;
+      font-size: 0.75rem !important;
+      line-height: 0.77rem !important;
       opacity: 0;
       padding: 0.275rem;
       position: absolute;

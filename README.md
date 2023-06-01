@@ -43,8 +43,8 @@
 ---
 ## Introduction
 
-`<SingleValueInput>` is a Vue component that makes it simple to add 
-nicely styled and accessible single value inputs (i.e. not 
+`<SingleValueInput>` is a Vue component that makes it simple to add
+nicely styled and accessible single value inputs (i.e. not
 checkboxes, multi select fields or file inputs) to a form.
 
 It renders the field's label, the field itself, error message
@@ -81,7 +81,7 @@ All these elements are wrapped within an `<LI>` element.
  ! Tabindex control is required when a field hidden some of the time
  !
  ! NOTE: `tabIndexVal` must be 0 when the field is visible and -1
- !       when the field is hidden. This prevents keyboard navigation 
+ !       when the field is hidden. This prevents keyboard navigation
  !       users from getting lost in hidden inputs
  ! -->
 <SingleValueInput
@@ -148,13 +148,13 @@ This could be useful for:
 ```html
 <script>
 /**
- * Check if the input has the right number of words and that none of 
+ * Check if the input has the right number of words and that none of
  * those words are inappropriate
- * 
+ *
  * @param {string} input
  */
 const badInput = (input) => {
-  // Make sure words are all lowercase so we don't miss any that 
+  // Make sure words are all lowercase so we don't miss any that
   // might be capitalised
   const tmp = input.trim().toLowerCase();
   // Find all the words
@@ -176,7 +176,7 @@ const badInput = (input) => {
   return '';
 };
 /**
- * Strip invalid and excess characters from input value then truncate 
+ * Strip invalid and excess characters from input value then truncate
  * it if it's over 500 characters long
  *
  * @param {Event} event keyup event from `<input>` or `<textarea>`
@@ -537,7 +537,8 @@ Options can have the following structures
   the option label/text)
 * An object where the property name is used as the option's value
   attribute `<option value="">` and the property's value us use as
-  the label/text that's wrapped within the `<option></option>` elements
+  the label/text that's wrapped within the `<option></option>` elements.<br />
+   e.g. `{ '001': 'First option', '002': 'Option two', '003': 'Number three' }`
 
 (See [MDN `<option>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option), [MDN `<select>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select), [MDN `<datalist>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) for more info)
 
@@ -574,7 +575,9 @@ for more info)
 Whether or not the field is readonly
 (i.e. user is prevented from interacting with the field)
 
-(see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#readonly) & [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#readonly) for more info)
+(see [MDN `<input>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#readonly) &
+[MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#readonly)
+for more info)
 
 ### `required`
 
