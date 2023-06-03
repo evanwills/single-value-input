@@ -1,5 +1,5 @@
 <template>
-  <li>
+  <li class="single-val-input single-val-input--no-edit">
     <span class="inputs-block__label">{{ label }}</span>
     <span v-if="showDefault === true" class="inputs-block__input placeholder-txt">Not specified</span>
     <span v-else class="inputs-block__input">{{ value }}</span>

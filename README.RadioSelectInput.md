@@ -1,5 +1,7 @@
 # `<RadioSelectInput>`
 
+`<RadioSelectInput>` Handles rendering inputs that have a fixed set of options (`<select>`, `<input type="radio">` & `<input type="text" role="combobox">`)
+
 ## Attributes
 
 ### `access-key`

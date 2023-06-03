@@ -566,7 +566,7 @@ export default {
       const newVal = e.target.value.toLowerCase();
 
       this.filteredOptions = this.usableOptions.filter(
-        (option) => (option.label.toLowerCase().includes(newVal) || option.value.toLowerCase().includes(newVal))
+        (option) => (option.label.toLowerCase().includes(newVal) || option.value.toLowerCase().includes(newVal)),
       ).map(getLabels);
 
       const len = this.filteredOptions.length;
@@ -607,19 +607,7 @@ export default {
      * Set the current/default value
      * (i.e. the value that's come from the server)
      */
-    setCurrentValue() {
-      // Get the data type of the supplied default value
-      switch (typeof this.value) {
-        case 'string':
-          this.currentValue = this.value;
-          break;
-        case 'number':
-          this.currentValue = this.value.toString();
-          break;
-        default:
-          this.currentValue = '';
-      }
-
+    validateCurrentValue() {
       // Make sure initial value is one of the allowed options
       if (this.currentValue !== '') {
         let ok = false;
@@ -662,7 +650,7 @@ export default {
       // Make sure options are useable
       let options = normaliseOptions(this.options, this.currentValue);
 
-      options = (this.renderType === 'select' && this.useEmpty === true && typeof this.emptyTxt === 'string' && this.emptyTxt !== '')
+      options = (this.useEmpty === true)
         ? [{ value: '', label: this.emptyTxt }, ...options]
         : options;
 
@@ -697,7 +685,17 @@ export default {
   },
 
   beforeMount() {
-    this.setCurrentValue();
+    // Get the data type of the supplied default value
+    switch (typeof this.value) {
+      case 'string':
+        this.currentValue = this.value;
+        break;
+      case 'number':
+        this.currentValue = this.value.toString();
+        break;
+      default:
+        this.currentValue = '';
+    }
 
     if (typeof this.type === 'string') {
       const type = this.type.replace(/[^a-z]+/ig, '').toLowerCase();
@@ -709,7 +707,7 @@ export default {
       }
     }
 
-    this.useEmpty = (isBoolTrue(this.noNonEmpty) === false || this.currentValue === '');
+    this.useEmpty = (this.renderType === 'select' && (isBoolTrue(this.noNonEmpty) === false || this.currentValue === ''));
 
     // Get the string value for the selected item.
     this.valueAttr = (this.renderType === 'radio')
@@ -717,6 +715,7 @@ export default {
       : 'selected';
 
     this.setUsableOptions();
+    this.validateCurrentValue();
   },
 
   mounted() {

@@ -750,7 +750,7 @@ export default {
      *                    FALSE otherwise
      */
     isSelect() {
-      return (this.type === 'select' || this.type === 'radio' || this.type === 'combo');
+      return (this.type === 'select' || this.type === 'radio' || this.type === 'combobox');
     },
 
     /**
