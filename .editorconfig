@@ -39,8 +39,8 @@ indent_style = tab
 indent_size = 8
 
 
-[*.md]
-trim_trailing_whitespace = false
+# [*.md]
+# trim_trailing_whitespace = false
 
 
 

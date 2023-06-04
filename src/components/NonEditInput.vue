@@ -7,7 +7,14 @@
 </template>
 
 <script>
-
+/**
+ * `<NonEditInput>` Is a simple component for rendering input
+ * label/value pairs. If value is empty, *"Not specified"* is
+ * rendered to show that the value is empty.
+ *
+ * @property {sring} label Human readable label for the input
+ * @property {sring} value Human readable value for the input
+ */
 export default {
   props: {
     label: { type: String, required: true },
