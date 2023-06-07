@@ -62,85 +62,7 @@
 </template>
 
 <script>
-/**
- * Normalise option objects so they have expected properties
- *
- * @param {<string|number|Object>[]} options List of options
- *
- * @returns {Object[]}
- */
-const normaliseOptions = (options, defaultVal) => {
-  let _options = [];
-
-  if (Array.isArray(options) === false && typeof options === 'object') {
-    const output = [];
-    const keys = Object.keys(options);
-
-    for (let a = 0; a < keys.length; a += 1) {
-      const key = keys[a];
-      output.push({ value: key, label: options[key] });
-    }
-
-    _options = output;
-  } else {
-    _options = [...options];
-  }
-
-  return _options.map((item) => {
-    const t = typeof item;
-    let _val = '';
-    let _label = '';
-    let vProp = '';
-    let lProp = '';
-
-    if (t === 'string' || t === 'number') {
-      _val = item;
-      _label = _val;
-    } else {
-      if (typeof item.label !== 'undefined') {
-        lProp = 'label';
-        vProp = (typeof item.value !== 'undefined')
-          ? 'value'
-          : 'label';
-      } else if (typeof item.key !== 'undefined') {
-        vProp = 'key';
-        lProp = (typeof item.value !== 'undefined')
-          ? 'value'
-          : 'key';
-      } else if (typeof item.Value !== 'undefined') {
-        vProp = 'Value';
-        lProp = (typeof item.Key !== 'undefined')
-          ? 'Key'
-          : 'Value';
-      } else if (typeof item.Key !== 'undefined') {
-        lProp = 'Key';
-        vProp = (typeof item.Key !== 'undefined')
-          ? 'Key'
-          : 'Value';
-      }
-
-      if (vProp === '' || lProp === '') {
-        throw new Error(
-          'Could not determine either the `value` or `label` '
-          + `property of option: "${item.toString()}"`,
-        );
-      }
-
-      _val = item[vProp];
-      _label = item[lProp];
-    }
-
-    if (typeof _val !== 'string') {
-      _val = _val.toString();
-    }
-
-    if (typeof _label !== 'string') {
-      _label = _label.toString();
-    }
-
-    return { value: _val, label: _label, default: (defaultVal === _val) };
-  });
-};
+import { normaliseOptions } from './radioSelect.utils';
 
 /**
  * Add an ID string for each item in the array.
@@ -531,7 +453,7 @@ export default {
         this.currentValue = newVal;
       }
 
-      this.invalid = ((this.required === true && this.currentValue === '') || newVal === false);
+      this.invalid = ((this.isRequired === true && this.currentValue === '') || newVal === false);
 
       this.$emit('invalid', this.invalid);
 
