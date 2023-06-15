@@ -53,7 +53,7 @@
                 v-on:focus="genericHandler($event)"
                 v-on:keydown="genericHandler($event)"
                 v-on:keypress="genericHandler($event)"
-                v-on:keyup="keyupHandler($event)"></textarea>
+                v-on:keyup="genericHandler($event)"></textarea>
       <input  v-else
               :class="inputFieldClass"
               :accesskey="accessKeyAttr"
@@ -90,7 +90,7 @@
         <span class="material-icons">visibility_off</span>
         <span class="visually-hidden">Hide password</span>
       </button>
-      <span v-if="iconPost !== ''" :class="iconPostCLass">{{ iconPre }}</span>
+      <span v-if="iconPost !== ''" :class="iconPostCLass">{{ iconPost }}</span>
       <div v-if="hasError === true && showError === true"
             class="single-val-input__error"
             :id="getID('error')" >
@@ -783,14 +783,14 @@ export default {
     },
 
     iconPreCLass() {
-      const tmp = 'input-icon input-icon--pre'
+      const tmp = 'input-icon input-icon--pre';
       return (this.iconPre.length > 1)
         ? `${tmp} material-icons`
         : tmp;
     },
 
     iconPostCLass() {
-      const tmp = 'input-icon input-icon--post'
+      const tmp = 'input-icon input-icon--post';
       return (this.iconPost.length > 1)
         ? `${tmp} material-icons`
         : tmp;
@@ -1193,7 +1193,7 @@ export default {
         console.warn(
           `"${this.validationType}" does not match any known validation types. `
           + 'Known validation types are: "'
-          + `${Object.keys(validators).join('", "')}"`
+          + `${Object.keys(validators).join('", "')}"`,
         );
       } else {
         this.standardVal = validators[vType];
