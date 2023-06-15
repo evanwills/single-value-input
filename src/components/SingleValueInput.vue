@@ -1038,34 +1038,18 @@ export default {
      *                  directly within this component
      */
     hasChanged(e) {
-      console.group('SingleValueInput.hasChanged()');
-      console.log('e.target:', e.target);
-      console.log('e.target:', e.target);
-      console.log('this.showError (before):', this.showError);
-      console.log('this.extraError (before):', this.extraError);
-      console.log('this.currentValue (before):', this.currentValue);
-      console.log('this.customVal:', this.customVal);
-      console.log('this.customVal !== null:', this.customVal !== null);
       this.showError = !e.target.checkValidity();
 
       this.currentValue = e.target.value;
-
-      console.log('this.currentValue (after):', this.currentValue);
-      console.log('this.showError (middle):', this.showError);
 
       if (this.showError === false && this.customVal !== null) {
         this.extraError = this.customVal(this.currentValue);
         this.showError = (typeof this.extraError === 'string' && this.extraError.trim() !== '');
       }
 
-      console.log('this.currentValue.match(/^0[45][0-9]{8}$/):', this.currentValue.match(/^0[45][0-9]{8}$/));
-      console.log('this.extraError (after):', this.extraError);
-      console.log('this.showError (after):', this.showError);
-
       if (this.showError === false) {
         this.$emit('change', e);
       }
-      console.groupEnd();
     },
 
     /**
@@ -1127,11 +1111,6 @@ export default {
      * key
      */
     keyupHandler(event) {
-      console.group('keyupHandler(event)');
-      console.log('event.target:', event.target);
-      console.log('event.target.value (before):', event.target.value);
-      // console.log('this.standardVal.sanitise(event.target.value):', this.standardVal.sanitise(event.target.value));
-
       if (this.standardVal !== null && typeof this.standardVal.sanitise === 'function') {
         const tmp = this.standardVal.sanitise(event.target.value);
         if (tmp !== '') {
@@ -1140,8 +1119,6 @@ export default {
       } else {
         this.$emit(event.type, event);
       }
-      console.log('event.target.value (after):', event.target.value);
-      console.groupEnd();
     },
 
     /**
@@ -1171,8 +1148,6 @@ export default {
   },
 
   beforeMount() {
-    console.group('SingleValueInput.beforeMount()');
-
     if (typeof this.label !== 'string' || this.label.trim() === '') {
       // For accessibility reasons we MUST have a non-empty label
       throw new Error(
@@ -1207,16 +1182,12 @@ export default {
     // Do we have a help text block to show the user?
     this.hasHelp = this.notEmpty('help', 'helpTxt');
 
-    console.log('this.validationType:', this.validationType)
-
     // Check if we should be using common validation for this input
     if (typeof this.validationType === 'string'
         && this.validationType.trim() !== ''
     ) {
       // Normalise the validation type
       const vType = this.validationType.replace(/[^a-z]+/ig, '').trim().toLowerCase();
-
-      console.log('vType:', vType);
 
       if (typeof validators[vType] === 'undefined') {
         console.warn(
@@ -1226,7 +1197,6 @@ export default {
         );
       } else {
         this.standardVal = validators[vType];
-        console.log('this.standardVal:', this.standardVal);
 
         if (typeof this.standardVal.validate === 'function') {
           this.customVal = this.standardVal.validate;
@@ -1282,8 +1252,6 @@ export default {
 
     // Do we have an error message to show the user?
     this.hasError = this.notEmpty('error', 'customErr');
-
-    console.groupEnd();
   },
 };
 </script>
@@ -1509,7 +1477,7 @@ $border-rad: 0.3rem;
   &--pre {
     left: -0.1rem;
     line-height: 1.5rem;
-    padding: 0.325rem 0.25rem 0.325rem 0.3rem;
+    padding: 0.325rem 0.25rem 0.325rem 0.45rem;
   }
 
   &--password-toggle {
