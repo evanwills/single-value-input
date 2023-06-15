@@ -33,6 +33,7 @@
     * [`step`](#step) _(standard HTML)_
     * [`tabindex`](#tabindex) _(standard HTML)_
     * [`type`](#type)
+    * [`validation-type`](#validation-type)
     * [`value`](#value)
 * [Slots](#slots)
   * [help](#help)
@@ -142,7 +143,7 @@ as input is valid.
 >           Using simple pattern matching in the browser to catch
 >           accidental mistakes, coupled with complex validation
 >           server-side to eliminate deliberately invalid values is
->           enough. If this is true for use case, use the
+>           enough. If this is true for your use-case, use the
 >           [`pattern`](#pattern) attribute instead
 
 This could be useful for:
@@ -1061,6 +1062,38 @@ Allowed types are:
 
 > __Note:__ If the specified type is not one of the above,
 >           an error will be thrown
+
+### `validation-type`
+
+|  Required  |   Type     |   Default   |     Variable Name      |
+|------------|------------|-------------|------------------------|
+| _optional_ | _{string}_ | `undefined` | `this.validationType`  |
+
+Predefined validation settings for common input types:
+
+* fixedphone (Australia)
+* mobilephone (Australia)
+* anyphone (Australia)
+* intphone (International phone number)
+* email (prevents malicious email being used)
+* pobox (PO box postcode)
+* street (Street address postcode)
+* postcode (PO Box or Street address postcode)
+* name (People's - names very restricted character set)
+* url
+* money (number with zero or two decimal places)
+
+Automatically sets input [pattern](#pattern) attribute, [placeholder](#placeholder) text, [error message](#error-msg), [custom validation](#custom-validation) function and sanitisation function (triggered on `keyup` event)
+
+```html
+<SingleValueInput
+  field-id="mobile-number"
+  label="Mobile"
+  :tabindex="isVisible"
+  type="text"
+  validation-type="mobilephone"
+  v-on:change="evenChange($event)" />
+```
 
 ### `value`
 

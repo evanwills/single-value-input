@@ -1,4 +1,3 @@
-
 /**
  * Normalise option objects so they have expected properties
  *

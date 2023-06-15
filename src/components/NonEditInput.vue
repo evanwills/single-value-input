@@ -30,7 +30,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../assets/scss/config';
+@import '@/assets/scss/config';
 .placeholder-txt {
   color: $dark-grey;
   font-style: italic;

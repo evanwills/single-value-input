@@ -113,6 +113,25 @@
         <p>We need to know your favourite option so we can try and give it to you.</p>
       </template>
     </SingleValueInput>
+    <SingleValueInput field-id="mobile-field"
+                      label="Mobile phone"
+                      required
+                      validation-type="mobilephone"
+                      type="tel">
+    </SingleValueInput>
+    <SingleValueInput field-id="money-field"
+                      label="Money"
+                      required
+                      validation-type="money"
+                      step="0.01"
+                      type="number">
+    </SingleValueInput>
+    <SingleValueInput field-id="percent-field"
+                      label="Percent"
+                      required
+                      suffix-icon="%"
+                      type="number">
+    </SingleValueInput>
   </ul>
 </template>
 

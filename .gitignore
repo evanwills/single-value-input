@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 package-lock.json
 *.bak
+..vite-running
+.vite-running

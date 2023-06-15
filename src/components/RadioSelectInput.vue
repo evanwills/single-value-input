@@ -51,10 +51,10 @@
             :tabindex="tabIndex"
             v-on:change="selectChanged($event)"
             v-on:blur="selectChanged($event)">
-      <option v-for="(option, i) of usableOptions"
+      <option v-for="(option) of usableOptions"
               :value="option.value"
               :selected="isSelected(option)"
-              v-bind:key="i">
+              v-bind:key="option.value">
         {{ option.label }}
       </option>
     </select>
@@ -84,6 +84,16 @@ const setOptionIDs = (fieldID) => (item, index) => ({ ...item, id: `${fieldID}--
 const isBoolTrue = (input) => (typeof input === 'boolean' && input === true);
 
 const getLabels = (option) => option.label;
+
+/**
+ * Remove any empty options from select field options
+ *
+ * (Used when no-non-empty is set to remove the empty option after
+ * a non-empty option has been selected)
+ *
+ * @param {Object[]} option list of options for select field
+ */
+const removeEmpty = (option) => (option.value.trim() !== '');
 
 export default {
   name: 'accessible-select',
@@ -523,6 +533,10 @@ export default {
      */
     selectChanged(e) {
       this.handleChangeShared(e, this.validateValue(e.target.value));
+
+      if (this.currentValue.trim() !== '' && this.noNonEmpty === true) {
+        this.usableOptions = this.usableOptions.filter(removeEmpty);
+      }
     },
 
     /**
@@ -664,7 +678,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../assets/scss/_config.scss';
+@import '@/assets/scss/config';
 
 .tsf-select {
   align-items: center;

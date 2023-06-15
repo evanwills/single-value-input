@@ -14,6 +14,7 @@
       <slot name="help"><p>{{ helpTxt }}</p></slot>
     </div>
     <div :class="inputClass">
+      <span v-if="iconPre !== ''" :class="iconPreCLass">{{ iconPre }}</span>
       <RadioSelectInput v-if="isSelect"
                         :field-id="fieldId"
                         :access-key="accessKeyAttr"
@@ -39,8 +40,8 @@
                 :id="fieldId"
                 :maxlength="maxLengthAttr"
                 :minlength="minLengthAttr"
-                :pattern="patternAttr"
-                :placeholder="placeholderAttr"
+                :pattern="customPat"
+                :placeholder="customPlace"
                 :readonly="readonly"
                 :required="required"
                 :rows="rowsAttr"
@@ -52,7 +53,7 @@
                 v-on:focus="genericHandler($event)"
                 v-on:keydown="genericHandler($event)"
                 v-on:keypress="genericHandler($event)"
-                v-on:keyup="genericHandler($event)"></textarea>
+                v-on:keyup="keyupHandler($event)"></textarea>
       <input  v-else
               :class="inputFieldClass"
               :accesskey="accessKeyAttr"
@@ -63,8 +64,8 @@
               :maxlength="maxLengthAttr"
               :min="minAttr"
               :minlength="minLengthAttr"
-              :pattern="patternAttr"
-              :placeholder="placeholderAttr"
+              :pattern="customPat"
+              :placeholder="customPlace"
               :step="stepAttr"
               :tabindex="tabindex"
               :readonly="readonly"
@@ -76,9 +77,9 @@
               v-on:focus="genericHandler($event)"
               v-on:keydown="genericHandler($event)"
               v-on:keypress="genericHandler($event)"
-              v-on:keyup="genericHandler($event)" />
+              v-on:keyup="keyupHandler($event)" />
       <button v-if="type === 'password' && noToggle === false && showPassword === false"
-              class="password-toggle"
+              class="input-icon input-icon--password-toggle"
               v-on:click="togglePassword($event)">
         <span class="material-icons">visibility</span>
         <span class="visually-hidden">Show password</span>
@@ -89,10 +90,11 @@
         <span class="material-icons">visibility_off</span>
         <span class="visually-hidden">Hide password</span>
       </button>
-      <div v-if="this.hasError === true && showError === true"
+      <span v-if="iconPost !== ''" :class="iconPostCLass">{{ iconPre }}</span>
+      <div v-if="hasError === true && showError === true"
             class="single-val-input__error"
             :id="getID('error')" >
-        <slot name="error">{{ errorMsg }}</slot>
+        <slot name="error">{{ customErr }}</slot>
         <div v-if="extraError !== ''">{{ extraError }}</div>
       </div>
     </div>
@@ -104,6 +106,7 @@
 
 <script>
 import RadioSelectInput from './RadioSelectInput.vue';
+import validators from './validators';
 
 const inputTypes = [
   'color', 'combobox', 'date', 'datetime-local', 'email', 'month',
@@ -444,6 +447,15 @@ export default {
     placeholder: { type: String, required: false },
 
     /**
+     * Icon or character to render at the start of the input field
+     *
+     * e.g. "$" or
+     *
+     * @property {string} placeholder
+     */
+    prefixIcon: { type: String, required: false },
+
+    /**
      * Whether or not the field is readonly
      * (i.e. user is prevented from interacting with the field)
      *
@@ -486,7 +498,7 @@ export default {
      * [MDN `<textarea>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea#spellcheck)
      * for more info)
      *
-     * @property { type: Boolean, required: false },
+     * @property {boolean} spellCheck
      */
     spellCheck: { type: Boolean, required: false },
 
@@ -503,6 +515,15 @@ export default {
      * @property {number|string} maxVal
      */
     step: { type: Number, required: false },
+
+    /**
+     * Icon or character to render at the end of the input field
+     *
+     * e.g. "$" or
+     *
+     * @property {string} placeholder
+     */
+    suffixIcon: { type: String, required: false },
 
     /**
      * When content is hidden, tabindex must be set to `-1` to
@@ -553,6 +574,30 @@ export default {
     type: { type: String, required: true },
 
     /**
+     * Common standard validation types for text & numeric inputs
+     *
+     * Provides standard pattern attribute value, placeholder text
+     * and where appropriate additional error messages for common
+     * input field use-cases, plus sanitisation and validation functions.
+     *
+     * Available validation types:
+     * * fixedphone (Australia)
+     * * mobilephone (Australia)
+     * * anyphone (Australia)
+     * * intphone (International phone number)
+     * * email (prevents malicious email being used)
+     * * postcodepobox (PO box postcode)
+     * * postcodestreet (Street address postcode)
+     * * postcode (PO Box or Street address postcode)
+     * * name (People's names)
+     * * url
+     * * money (number with zero or two decimal places)
+     *
+     * @property {string} valType
+     */
+    validationType: { type: String, required: false },
+
+    /**
      * Predefined value for the field.
      *
      * @property {string|number|undefined} value
@@ -568,25 +613,57 @@ export default {
        * List of known and validated key/value pairs for HTML input
        * field attriubtes
        *
-       * @property {Object}
+       * @property {Object} attrs
        */
       attrs: {},
+
       /**
        * The current value of the field
        *
-       * @property {string}
+       * @property {string} currentValue
        */
       currentValue: '',
 
       /**
        * Custom min & max values for validating temporal inputs
        *
-       * @property {Object}
+       * @property {Object} custom
        */
       custom: {
         min: null,
         max: null,
       },
+
+      /**
+       * @property {string} customErr
+       */
+      customErr: '',
+
+      /**
+       * @property {string|undefined} customErr
+       */
+      customPat: undefined,
+
+      /**
+       * @property {string} customErr
+       */
+      customPlace: undefined,
+
+      /**
+       * Custom sanitisation function to sanitise user input on
+       * keyup event
+       *
+       * @property {Function} customSan
+       */
+      customSan: null,
+
+      /**
+       * Custom validation function to check whether user input is
+       * valid on change or on blur
+       *
+       * @property {Function} customVal
+       */
+      customVal: null,
 
       /**
        * Extra error message generated by custom validation function
@@ -599,7 +676,7 @@ export default {
        * Whether or not there is error text either as an attribute
        * or a slot
        *
-       * @property {boolean}
+       * @property {boolean} hasError
        */
       hasError: true,
 
@@ -607,9 +684,12 @@ export default {
        * Whether or not there is help text either as an attribute
        * or a slot
        *
-       * @property {boolean}
+       * @property {boolean} hasHelp
        */
       hasHelp: true,
+
+      iconPre: '',
+      iconPost: '',
 
       /**
        * Whether or not the current value is valid
@@ -618,7 +698,7 @@ export default {
        * >           otherwise they will show an error after the
        * >           field has had focus
        *
-       * @property {boolean}
+       * @property {boolean} showError
        */
       showError: false,
 
@@ -626,9 +706,16 @@ export default {
        * Whether or not to make password input a text field so
        * password can be seen
        *
-       * @property {boolean}
+       * @property {boolean} showPassword
        */
       showPassword: false,
+
+      /**
+       * Some standard configuration/validation for known inputs
+       *
+       * @property {Object|null} standardVal
+       */
+      standardVal: null,
     };
   },
 
@@ -695,6 +782,20 @@ export default {
       return `${tmp} ${tmp}--${tail}`;
     },
 
+    iconPreCLass() {
+      const tmp = 'input-icon input-icon--pre'
+      return (this.iconPre.length > 1)
+        ? `${tmp} material-icons`
+        : tmp;
+    },
+
+    iconPostCLass() {
+      const tmp = 'input-icon input-icon--post'
+      return (this.iconPost.length > 1)
+        ? `${tmp} material-icons`
+        : tmp;
+    },
+
     /**
      * List of class names to add to the input field
      *
@@ -728,9 +829,19 @@ export default {
     inputFieldClass() {
       const tmp = 'single-val-input__input';
 
-      return (this.type !== 'password' || this.noToggle === true)
+      let output = (this.type !== 'password' || this.noToggle === true)
         ? tmp
         : `${tmp} ${tmp}--password`;
+
+      output += (this.iconPre.length > 0)
+        ? ` ${tmp} ${tmp}--icon-pre`
+        : '';
+
+      output += (this.iconPost.length > 0)
+        ? ` ${tmp} ${tmp}--icon-post`
+        : '';
+
+      return output;
     },
 
     /**
@@ -822,7 +933,7 @@ export default {
      * @returns {string|undefined}
      */
     patternAttr() {
-      return (typeof this.pattern === 'string' && this.pattern.trim() !== '')
+      return (typeof this.customPat === 'string' && this.customPat.trim() !== '')
         ? this.pattern
         : undefined;
     },
@@ -927,18 +1038,34 @@ export default {
      *                  directly within this component
      */
     hasChanged(e) {
+      console.group('SingleValueInput.hasChanged()');
+      console.log('e.target:', e.target);
+      console.log('e.target:', e.target);
+      console.log('this.showError (before):', this.showError);
+      console.log('this.extraError (before):', this.extraError);
+      console.log('this.currentValue (before):', this.currentValue);
+      console.log('this.customVal:', this.customVal);
+      console.log('this.customVal !== null:', this.customVal !== null);
       this.showError = !e.target.checkValidity();
 
       this.currentValue = e.target.value;
 
-      if (this.showError === false && typeof this.customValidation === 'function') {
-        this.extraError = this.customValidation(this.currentValue);
+      console.log('this.currentValue (after):', this.currentValue);
+      console.log('this.showError (middle):', this.showError);
+
+      if (this.showError === false && this.customVal !== null) {
+        this.extraError = this.customVal(this.currentValue);
         this.showError = (typeof this.extraError === 'string' && this.extraError.trim() !== '');
       }
+
+      console.log('this.currentValue.match(/^0[45][0-9]{8}$/):', this.currentValue.match(/^0[45][0-9]{8}$/));
+      console.log('this.extraError (after):', this.extraError);
+      console.log('this.showError (after):', this.showError);
 
       if (this.showError === false) {
         this.$emit('change', e);
       }
+      console.groupEnd();
     },
 
     /**
@@ -997,6 +1124,27 @@ export default {
     },
 
     /**
+     * key
+     */
+    keyupHandler(event) {
+      console.group('keyupHandler(event)');
+      console.log('event.target:', event.target);
+      console.log('event.target.value (before):', event.target.value);
+      // console.log('this.standardVal.sanitise(event.target.value):', this.standardVal.sanitise(event.target.value));
+
+      if (this.standardVal !== null && typeof this.standardVal.sanitise === 'function') {
+        const tmp = this.standardVal.sanitise(event.target.value);
+        if (tmp !== '') {
+          event.target.value = this.standardVal.sanitise(event.target.value);
+        }
+      } else {
+        this.$emit(event.type, event);
+      }
+      console.log('event.target.value (after):', event.target.value);
+      console.groupEnd();
+    },
+
+    /**
      * Check whether there's some content to render for a given text block
      *
      * @param {string} slotName Name of the slot to be checked
@@ -1023,6 +1171,8 @@ export default {
   },
 
   beforeMount() {
+    console.group('SingleValueInput.beforeMount()');
+
     if (typeof this.label !== 'string' || this.label.trim() === '') {
       // For accessibility reasons we MUST have a non-empty label
       throw new Error(
@@ -1054,18 +1204,93 @@ export default {
       ? this.value
       : '';
 
-    // Do we have an error message to show the user?
-    this.hasError = this.notEmpty('error', 'errorMsg');
-
     // Do we have a help text block to show the user?
     this.hasHelp = this.notEmpty('help', 'helpTxt');
+
+    console.log('this.validationType:', this.validationType)
+
+    // Check if we should be using common validation for this input
+    if (typeof this.validationType === 'string'
+        && this.validationType.trim() !== ''
+    ) {
+      // Normalise the validation type
+      const vType = this.validationType.replace(/[^a-z]+/ig, '').trim().toLowerCase();
+
+      console.log('vType:', vType);
+
+      if (typeof validators[vType] === 'undefined') {
+        console.warn(
+          `"${this.validationType}" does not match any known validation types. `
+          + 'Known validation types are: "'
+          + `${Object.keys(validators).join('", "')}"`
+        );
+      } else {
+        this.standardVal = validators[vType];
+        console.log('this.standardVal:', this.standardVal);
+
+        if (typeof this.standardVal.validate === 'function') {
+          this.customVal = this.standardVal.validate;
+        }
+
+        if (typeof this.standardVal.sanitise === 'function') {
+          this.customSan = this.standardVal.sanitise;
+        }
+
+        this.customErr = this.standardVal.error;
+
+        if (this.standardVal.pattern.trim() !== '') {
+          this.customPat = this.standardVal.pattern;
+        }
+
+        if (this.standardVal.placeholder.trim() !== '') {
+          this.customPlace = this.standardVal.placeholder;
+        }
+
+        if (this.standardVal.preIcon.trim() !== '') {
+          this.iconPre = this.standardVal.preIcon;
+        }
+
+        if (this.standardVal.postIcon.trim() !== '') {
+          this.iconPost = this.standardVal.postIcon;
+        }
+      }
+    }
+
+    if (typeof this.customValidation === 'function') {
+      this.customVal = this.customValidation;
+    }
+
+    if (typeof this.errorMsg === 'string' && this.errorMsg.trim() !== '') {
+      this.customErr = this.errorMsg;
+    }
+
+    if (typeof this.pattern === 'string' && this.pattern.trim() !== '') {
+      this.customPat = this.pattern;
+    }
+
+    if (typeof this.placeholder === 'string' && this.placeholder.trim() !== '') {
+      this.customPlace = this.placeholder;
+    }
+
+    if (typeof this.prefixIcon === 'string') {
+      this.iconPre = this.prefixIcon;
+    }
+
+    if (typeof this.suffixIconIcon === 'string') {
+      this.iconPost = this.suffixIcon;
+    }
+
+    // Do we have an error message to show the user?
+    this.hasError = this.notEmpty('error', 'customErr');
+
+    console.groupEnd();
   },
 };
 </script>
 
 <style lang="scss">
-@import '../assets/scss/config';
-@import '../assets/scss/base';
+@import '@/assets/scss/config';
+@import '@/assets/scss/base';
 
 $border-rad: 0.3rem;
 
@@ -1250,6 +1475,14 @@ $border-rad: 0.3rem;
     &[type=range] {
       padding: 0;
     }
+
+    &--icon-pre {
+      padding-left: 2rem;
+    }
+
+    &--icon-post {
+      padding-right: 2.6rem;
+    }
   }
 
   &__required {
@@ -1257,17 +1490,32 @@ $border-rad: 0.3rem;
     font-size: 0.875rem;
     font-weight: normal;
   }
+
+  &__outer {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+  }
 }
 
-.password-toggle {
+.input-icon {
   background-color: transparent;
   color: $light-grey-para;
   border-radius: 0.2rem;
   display: inline-block;
-  line-height: 0.65rem;
-  padding: 0.325rem 0.5rem;
   position: absolute;
-  right: -0.1rem;
   top: 0;
+
+  &--pre {
+    left: -0.1rem;
+    line-height: 1.5rem;
+    padding: 0.325rem 0.25rem 0.325rem 0.3rem;
+  }
+
+  &--password-toggle {
+    line-height: 0.65rem;
+    padding: 0.325rem 0.5rem;
+    right: -0.1rem;
+  }
 }
 </style>
