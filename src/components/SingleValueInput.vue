@@ -2,12 +2,12 @@
   <li class="single-val-input">
     <span v-if="type === 'radio'" :id="fieldId" class="single-val-input__label">
       {{ label }}
-      <span class="single-val-input__required">{{ requiredTxt }}</span>
+      <span class="single-val-input__required">{{ requiredStr }}</span>
       <span :class="errorIconClass">priority_high</span>
     </span>
     <label v-else :for="fieldId" class="single-val-input__label">
       {{ label }}
-      <span class="single-val-input__required">{{ requiredTxt }}</span>
+      <span class="single-val-input__required">{{ requiredStr }}</span>
       <span :class="errorIconClass">priority_high</span>
     </label>
     <div v-if="(hasHelp === true && helpFirst === true)" :class="helpClass" :id="getID('help')">
@@ -53,7 +53,7 @@
                 v-on:focus="genericHandler($event)"
                 v-on:keydown="genericHandler($event)"
                 v-on:keypress="genericHandler($event)"
-                v-on:keyup="genericHandler($event)"></textarea>
+                v-on:keyup="keyupHandler($event)"></textarea>
       <input  v-else
               :class="inputFieldClass"
               :accesskey="accessKeyAttr"
@@ -480,6 +480,23 @@ export default {
     required: { type: Boolean, required: false, default: false },
 
     /**
+     * Whether or not render "(optional)" when input is optional,
+     * instead of "(required)" when it's required.
+     *
+     * > __Note:__ This is a __VERY BAD__ pattern, however, my
+     * >           current use-case requires it until we can have
+     * >           it reversed
+     *
+     * Render "(optional)" when the field is optional and blank when
+     * it is required, instead of the conventional approach which is
+     * to render blank when input is optional and "(required)" when
+     * it's required.
+     *
+     * @property {boolean} required
+     */
+    requiredRev: { type: Boolean, required: false, default: false },
+
+    /**
      * Number of lines in a textarea input
      *
      * (see
@@ -690,6 +707,20 @@ export default {
 
       iconPre: '',
       iconPost: '',
+
+      /**
+       * String to render when field is not required
+       *
+       * @property {string} optionalTxt
+       */
+      optionalTxt: '',
+
+      /**
+       * String to render when field is required
+       *
+       * @property {string} requiredTxt
+       */
+      requiredTxt: ' (required)',
 
       /**
        * Whether or not the current value is valid
@@ -949,10 +980,10 @@ export default {
         : undefined;
     },
 
-    requiredTxt() {
+    requiredStr() {
       return (this.required === true)
-        ? ' (required)'
-        : '';
+        ? this.requiredTxt
+        : this.optionalTxt;
     },
 
     /**
@@ -1111,10 +1142,13 @@ export default {
      * key
      */
     keyupHandler(event) {
-      if (this.standardVal !== null && typeof this.standardVal.sanitise === 'function') {
+      if (this.standardVal !== null
+          && typeof this.standardVal.sanitise === 'function'
+      ) {
         const tmp = this.standardVal.sanitise(event.target.value);
+
         if (tmp !== '') {
-          event.target.value = this.standardVal.sanitise(event.target.value);
+          event.target.value = this.standardVal.sanitise(event.target.value); // eslint-disable-line
         }
       } else {
         this.$emit(event.type, event);
@@ -1252,12 +1286,18 @@ export default {
 
     // Do we have an error message to show the user?
     this.hasError = this.notEmpty('error', 'customErr');
+
+    if (this.requiredRev === true) {
+      this.optionalTxt = ' (optional)';
+      this.requiredTxt = '';
+    }
   },
 };
 </script>
 
 <style lang="scss">
 @import '@/assets/scss/config';
+@import '@/assets/scss/helpers';
 @import '@/assets/scss/base';
 
 $border-rad: 0.3rem;
