@@ -1,4 +1,88 @@
 /**
+ * Get the option list as an array (rather than an array nested
+ * within an object)
+ *
+ * @param {Object|Array} optionList
+ *
+ * @returns {Array}
+ */
+const getListOptions = (optionList) => {
+  const output = (typeof optionList.SelectOptionItems !== 'undefined')
+    ? optionList.SelectOptionItems
+    : optionList;
+
+  if (!Array.isArray(output)) {
+    throw new Error(`Expected optionList to have an array. Found ${typeof output}`);
+  }
+
+  return output;
+};
+
+/**
+ * Find the selected option based on the supplied value
+ *
+ * @param {<{Value: string, Key: string|number}>[]} optionList List
+ *                              of Key/Value pairs
+ * @param {string|number} value Currently selected value
+ *
+ * @returns {Array} one option from the supplied array if an item
+ *                  was found to match the value.
+ *                  Empty array if no match was found
+ */
+export const findSelectedOption = (optionList, value) => {
+  for (let a = 0; a < optionList.length; a += 1) {
+    if (optionList[a].value === value) {
+      return [optionList[a]];
+    }
+  }
+
+  return [];
+};
+
+/**
+ * Get a list of objects to be used passed <PrettySelect> options
+ *
+ * Output objects have
+ * * `key`   property which is used as the option Value
+ * * `value` property which is used as the option's label (what
+ * *         the end user sees)
+ *
+ * @param {Array} optionList
+ * @returns {array}
+ */
+export const getKeyValueOptions = (optionList) => {
+  const _list = getListOptions(optionList);
+
+  return _list.map((oneOption) => { // eslint-disable-line
+    return {
+      key: oneOption.Value,
+      value: oneOption.Key,
+    };
+  });
+};
+
+/**
+ * Get the human readable version of the user selected value, or the
+ * previous human readable version the value if user selected value
+ * was invalid.
+ *
+ * @param {Object|Array}  optionList List of select options a value
+ *                                   should be found in.
+ * @param {string|number} newValue   New value user has selected
+ * @param {string|number} oldValue   Previous human readable version
+ *                                   of value
+ *
+ * @returns {string|number}
+ */
+export const getSelectedLabel = (optionList, newValue, oldValue) => {
+  const option = findSelectedOption(optionList, newValue);
+
+  return (option.length > 0)
+    ? option[0].label
+    : oldValue;
+};
+
+/**
  * Normalise option objects so they have expected properties
  *
  * @param {<string|number|Object>[]} options List of options
@@ -76,46 +160,4 @@ export const normaliseOptions = (options, defaultVal) => {
 
     return { value: _val, label: _label, default: (defaultVal === _val) };
   });
-};
-
-/**
- * Find the selected option based on the supplied value
- *
- * @param {<{Value: string, Key: string|number}>[]} optionList List
- *                              of Key/Value pairs
- * @param {string|number} value Currently selected value
- *
- * @returns {Array} one option from the supplied array if an item
- *                  was found to match the value.
- *                  Empty array if no match was found
- */
-export const findSelectedOption = (optionList, value) => {
-  for (let a = 0; a < optionList.length; a += 1) {
-    if (optionList[a].value === value) {
-      return [optionList[a]];
-    }
-  }
-
-  return [];
-};
-
-/**
- * Get the human readable version of the user selected value, or the
- * previous human readable version the value if user selected value
- * was invalid.
- *
- * @param {Object|Array}  optionList List of select options a value
- *                                   should be found in.
- * @param {string|number} newValue   New value user has selected
- * @param {string|number} oldValue   Previous human readable version
- *                                   of value
- *
- * @returns {string|number}
- */
-export const getSelectedLabel = (optionList, newValue, oldValue) => {
-  const option = findSelectedOption(optionList, newValue);
-
-  return (option.length > 0)
-    ? option[0].label
-    : oldValue;
 };

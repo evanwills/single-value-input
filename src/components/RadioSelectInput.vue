@@ -678,7 +678,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/scss/config';
+@import '../assets/scss/config';
 
 .tsf-select {
   align-items: center;
