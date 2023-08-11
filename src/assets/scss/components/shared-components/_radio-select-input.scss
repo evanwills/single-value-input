@@ -1,0 +1,267 @@
+
+@import '../../config';
+
+.tsf-select {
+  align-items: center;
+  background-color: $white;
+  border: none;
+  border-radius: 0.3125rem;
+  cursor: pointer;
+  display: block;
+  min-width: 10rem;
+  padding: 0;
+  position: relative;
+  width: 100%;
+
+  &--error {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  &--required {
+    border-color: $tsf-red;
+  }
+  select:disabled {
+    // background-color: $middle-light-grey;
+    // color: $disabled-txt;
+    cursor: default;
+    cursor: not-allowed;
+  }
+
+  &::before {
+    content: "";
+    height: 0.5em;
+    outline: none;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 3rem;
+    height: 100%;
+    border-left: 0.05rem solid $regular-grey;
+  }
+
+  &::after {
+    background-color: $black;
+    clip-path: polygon(100% 0%, 0 0%, 50% 100%);
+    content: "";
+    height: 0.5em;
+    outline: none;
+    position: absolute;
+    top: 50%;
+    right: 1.1rem;
+    transform: translateY(-50%) rotate(0deg);
+    transition: transform ease-in-out 0.3s;
+    width: 0.7em;
+  }
+
+  &:focus-within {
+    outline: 0.1rem solid $utility-blue;
+    outline-offset: 0.1rem;
+
+    &::after {
+      transform: translateY(-50%) rotate(180deg);
+      transition: transform ease-in-out 0.3s;
+    }
+  }
+
+  > select {
+    appearance: none;
+    background-color: transparent;
+    border: none;
+    color: $dark-grey;
+    cursor: inherit;
+    display: block;
+    font-size: 1.1rem;
+    line-height: 1.5rem;
+    outline: none;
+    padding: 1rem 4rem 1rem 1rem;
+    width: 100%;
+
+    &::-ms-expand {
+      display: none;
+    }
+  }
+
+  &--combo {
+    > input {
+      appearance: none;
+      background-color: transparent;
+      border: none;
+      color: $dark-grey;
+      cursor: text;
+      display: block;
+      font-size: 1.1rem;
+      line-height: 1.5rem;
+      outline: none;
+      padding: 1rem 4rem 1rem 1rem;
+      width: 100%;
+
+      &::-ms-expand {
+        display: none;
+      }
+    }
+
+    > .material-icons {
+      color: $light-grey-para;
+      font-size: 1.7rem;
+      position: absolute;
+      top: 50%;
+      right: -0.35rem;
+      transform: translate(-50%, -50%);
+    }
+
+    &::after, &:hover::after {
+      display: none;
+    }
+  }
+
+  option {
+    background-color: $white;
+    font-weight: normal;
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+}
+
+datalist {
+  option {
+    background-color: $white;
+    font-weight: normal;
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+}
+
+ul.checkable-group {
+  // padding-top: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  > li {
+    border-radius: 0.3rem;
+    text-align: left;
+
+    &:focus-within {
+      outline: 0.125rem solid $tsf-bright-blue;
+      outline-offset: 0.063rem;
+    }
+  }
+
+  > li:nth-child(1n) {
+    margin-top: 0;
+  }
+
+  > li:nth-child(n + 2) {
+    margin-top: .25rem;
+  }
+
+  input:focus + .checkable-group__label {
+    &--empty {
+      outline: 0.1rem solid $tsf-bright-blue;
+      outline-offset: 0.1rem;
+    }
+  }
+
+  & .checkable-group__label {
+    display: block;
+    // font-weight: bold;
+    padding: 0.5rem 0 0.5rem 3rem;
+    position: relative;
+    width: 100%;
+
+    &:hover {
+      cursor: pointer;
+
+      &:before {
+        border-color: $tsf-bright-blue;
+      }
+    }
+
+    &::before, &::after {
+      content: '';
+      left: 0.75rem;
+      position: absolute;
+      top: 1.25rem;
+      transform: translate(-50%, -50%);
+    }
+
+    &::before {
+      background-color: $white;
+      border: 0.125rem solid $tsf-field-borders;
+      box-sizing: border-box;
+      content: '';
+      display: inline-block;
+      height: 1.5rem;
+      width: 1.5rem;
+    }
+
+    &::after {
+      display: inline-block;
+      height: 0.75rem;
+      opacity: 0;
+      transition: opacity ease-in-out 0.3s;
+      width: 0.75rem;
+    }
+
+    &--radio {
+      &::before {
+        border-radius: 10rem;
+      }
+
+      &::after {
+        background-color: $tsf-bright-blue;
+        border-radius: 10rem;
+      }
+    }
+
+    &--checkbox {
+      &::after {
+        border-left: 0.2rem solid $tsf-bright-blue;
+        border-bottom: 0.2rem solid $tsf-bright-blue;
+        display: inline-block;
+        height: 0.25rem;
+        top: 0.95rem;
+        left: 0.325rem;
+        transform: rotate(-45deg);
+        width: 0.625rem;
+      }
+    }
+  }
+
+  input {
+    &:focus {
+      &:before {
+        border-color: $tsf-bright-blue;
+      }
+    }
+
+    &:checked + .checkable-group__label {
+      font-weight: bold;
+
+      &:after {
+        opacity: 1;
+      }
+    }
+
+    &:disabled {
+      + .checkable-group__label {
+        cursor: not-allowed;
+
+        &:hover {
+          &:before {
+            border-color: $tsf-field-borders;
+          }
+        }
+      }
+
+      &:focus {
+        + .checkable-group__label {
+          &:before {
+            border-color: $tsf-field-borders;
+          }
+        }
+      }
+    }
+  }
+}

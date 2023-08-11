@@ -37,7 +37,7 @@ $light-sky-blue: #b2e9fc; // was #2e9bd2
 $dark-blue: #082548;
 $electric-blue: $light-sky-blue; // was #259ad5
 $middle-blue: $light-navy-blue; // was #003768;
-$light-blue: $light-navy-blue; // was #184f7e
+$light-blue: #b2e9fc; // was #184f7e
 $pale-blue: #e6f1f6;
 $utility-blue: $tsf-bright-blue;
 $utility-blue-hover: #0017a3; // was #025DA3;
@@ -51,6 +51,7 @@ $grey: #F7F7F7;
 $dark-grey: #333; // was #444444
 $less-dark-grey: $dark-grey; // was 4A4C4B
 $light-grey-para: #666;
+$disabled-txt: #76889C;
 $regular-grey: #ccc;
 $middle-dark-grey: #e1e1e1;
 $middle-grey: #e5e5e5;
@@ -66,12 +67,40 @@ $utility-red: $tsf-red; // was #e31837
 $utility-red-hover: $tsf-red-hover; // was #ba0414
 $utility-lightred: #ffe4dc; // was #ffebeb
 
+// colour map
+$colours: (
+  'navy-blue': $navy-blue,
+  'light-navy-blue': $light-navy-blue,
+  'electric-blue': $electric-blue,
+  'middle-blue': $middle-blue,
+  'light-blue': $light-blue,
+  'pale-blue': $pale-blue,
+  'orange': $orange,
+  'grey': $grey,
+  'dark-grey': $dark-grey,
+  'regular-grey': $regular-grey,
+  'middle-grey': $middle-grey,
+  'light-grey': $light-grey,
+  'utility-green': $utility-green,
+  'utility-red': $utility-red,
+  'white': $white,
+  'off-white': $off-white,
+  'black': $black,
+  'approved': $utility-green,
+  'pending': $grey,
+  'rejected': $utility-red,
+  'blue': $utility-blue,
+  'blue-hover': $utility-blue-hover,
+  'utility-blue': $utility-blue,
+  'utility-blue-hover': $utility-blue-hover
+);
+
 $breakpoints: (
-  'xx-small': 18.75rem, // 18.75rem
-  'x-small': 30rem,  // 30rem
-  'small': 48rem,    // 48rem
-  'medium': 64rem,  // 64rem
-  'large': 75rem    // 75rem
+  'xx-small': 300px, // 18.75rem
+  'x-small': 480px,  // 30rem
+  'small': 768px,    // 48rem
+  'medium': 1024px,  // 64rem
+  'large': 1200px    // 75rem
 );
 
 $margins: (
@@ -88,3 +117,39 @@ $tsf-font-weight-normal: normal;
 $font-mt-bold: $tsf-font; // was 'NewsGothicMTStd-Bold'
 $font-mt: $tsf-font; // was 'NewsGothicMTStd'
 $font-brand: $tsf-font; // was Arial
+
+// @font-face {
+//   font-family: "NewsGothicMTStd";
+//   src: url("/assets/font/38C563_0_0.eot");
+//   src: url("/assets/font/38C563_0_0.eot?#iefix") format("embedded-opentype"),
+//     url("/assets/font/38C563_0_0.woff2") format("woff2"),
+//     url("/assets/font/38C563_0_0.woff") format("woff"),
+//     url("/assets/font/38C563_0_0.ttf") format("truetype"),
+//     url("/assets/font/38C563_0_0.svg#svgFontName") format("svg");
+// }
+
+// @font-face {
+//   font-family: "NewsGothicMTStd-Bold";
+//   src: url("/assets/font/38C563_1_0.eot");
+//   src: url("/assets/font/38C563_1_0.eot?#iefix") format("embedded-opentype"),
+//     url("/assets/font/38C563_1_0.woff2") format("woff2"),
+//     url("/assets/font/38C563_1_0.woff") format("woff"),
+//     url("/assets/font/38C563_1_0.ttf") format("truetype"),
+//     url("/assets/font/38C563_1_0.svg#svgFontName") format("svg");
+// }
+
+// @font-face {
+//   font-family: "NewsGothicBT-Roman";
+//   src: url("/assets/font/279415_0_0.eot");
+//   src: url("/assets/font/279415_0_0.eot?#iefix") format("embedded-opentype"),
+//     url("/assets/font/279415_0_0.woff") format("woff"),
+//     url("/assets/font/279415_0_0.ttf") format("truetype");
+// }
+
+// @font-face {
+//   font-family: "NewsGothicBT-Bold";
+//   src: url("/assets/font/279415_2_0.eot");
+//   src: url("/assets/font/279415_2_0.eot?#iefix") format("embedded-opentype"),
+//     url("/assets/font/279415_2_0.woff") format("woff"),
+//     url("/assets/font/279415_2_0.ttf") format("truetype");
+// }

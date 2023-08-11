@@ -1,15 +1,14 @@
 <template>
   <li class="single-val-input">
-    <span v-if="type === 'radio'" :id="fieldId" class="single-val-input__label">
+    <label v-if="!isCheckable" :for="fieldId" :class="labelClass" data-tmp>
+      {{ label }}
+      <span class="single-val-input__required">{{ requiredStr }}</span>
+    </label>
+    <span v-else-if="showLabel" :id="fieldId" :class="labelClass">
       {{ label }}
       <span class="single-val-input__required">{{ requiredStr }}</span>
       <span :class="errorIconClass">priority_high</span>
     </span>
-    <label v-else :for="fieldId" class="single-val-input__label">
-      {{ label }}
-      <span class="single-val-input__required">{{ requiredStr }}</span>
-      <span :class="errorIconClass">priority_high</span>
-    </label>
     <div v-if="(hasHelp === true && helpFirst === true)" :class="helpClass" :id="getID('help')">
       <slot name="help"><p>{{ helpTxt }}</p></slot>
     </div>
@@ -18,11 +17,13 @@
       <RadioSelectInput v-if="isSelect"
                         :field-id="fieldId"
                         :access-key="accessKeyAttr"
+                        :dedupe="dedupe"
                         :empty-txt="emptyTxt"
                         :help-ids="describedByIDs"
                         :is-required="required"
                         :is-readonly="readonly"
                         :is-disabled="disabled"
+                        :last-updated="lastUpdated"
                         :no-non-empty="noNonEmpty"
                         :options="options"
                         :tab-index="tabindex"
@@ -32,6 +33,25 @@
                         v-on:change="selectChanged($event)"
                         v-on:focus="genericHandler($event)"
                         v-on:invalid="selectInvalid($event)" />
+      <CheckboxList v-else-if="type === 'checkbox'"
+                    :access-key="accessKeyAttr"
+                    :aria-describedby="describedByIDs"
+                    :dedupe="dedupe"
+                    :field-id="fieldId"
+                    :help-ids="describedByIDs"
+                    :is-required="required"
+                    :is-readonly="readonly"
+                    :is-disabled="disabled"
+                    :last-updated="lastUpdated"
+                    :maxlength="maxLength"
+                    :minlength="minLength"
+                    :options="options"
+                    :tab-index="tabindex"
+                    v-on:blur="selectChanged($event)"
+                    v-on:change="selectChanged($event)"
+                    v-on:checkedchange="checkedChanged($event)"
+                    v-on:focus="genericHandler($event)"
+                    v-on:invalid="selectInvalid($event)" />
       <textarea v-else-if="isTextarea"
                 class="single-val-input__input"
                 :accesskey="accessKeyAttr"
@@ -78,24 +98,21 @@
               v-on:keydown="genericHandler($event)"
               v-on:keypress="genericHandler($event)"
               v-on:keyup="keyupHandler($event)" />
-      <button v-if="type === 'password' && noToggle === false && showPassword === false"
+      <button v-if="type === 'password' && noToggle === false"
+              aria-live="polite"
               class="input-icon input-icon--password-toggle"
               v-on:click="togglePassword($event)">
-        <span class="material-icons">visibility</span>
-        <span class="visually-hidden">Show password</span>
+        <span class="material-icons">{{ passwordBtnIcon }}</span>
+        <span class="visually-hidden">{{ passwordBtnTxt }}</span>
       </button>
-      <button v-if="type === 'password' && showPassword === true"
-              class="password-toggle"
-              v-on:click="togglePassword($event)">
-        <span class="material-icons">visibility_off</span>
-        <span class="visually-hidden">Hide password</span>
-      </button>
-      <span v-if="iconPost !== ''" :class="iconPostCLass">{{ iconPost }}</span>
-      <div v-if="hasError === true && showError === true"
-            class="single-val-input__error"
-            :id="getID('error')" >
-        <slot name="error">{{ customErr }}</slot>
-        <div v-if="extraError !== ''">{{ extraError }}</div>
+      <span v-if="showError === false && externalInvalid === false" :class="iconPostCLass">{{ iconPost }}</span>
+      <span v-else-if="isCheckable === false" :class="errorIconClass">priority_high</span>
+      <div v-if="showError === true && (hasError === true || extraError !== '')"
+            aria-live="polite"
+            :class="errorMsgClass"
+            :id="getID('error')">
+        <slot v-if="extraError === ''" name="error">{{ customErr }}</slot>
+        <div v-if="extraError !== ''" v-html="extraError"></div>
       </div>
     </div>
     <div v-if="(hasHelp === true && helpFirst === false)" :class="helpClass" :id="getID('help')">
@@ -105,13 +122,15 @@
 </template>
 
 <script>
+import { getEpre } from '@/utils/general-utils';
 import RadioSelectInput from './RadioSelectInput.vue';
+import CheckboxList from './CheckboxList.vue';
 import validators from './validators';
 
 const inputTypes = [
-  'color', 'combobox', 'date', 'datetime-local', 'email', 'month',
-  'number', 'password', 'radio', 'range', 'select', 'tel', 'text',
-  'textarea', 'time', 'url', 'week',
+  'checkbox', 'color', 'combobox', 'date', 'datetime-local', 'email',
+  'month', 'number', 'password', 'radio', 'range', 'select', 'tel',
+  'text', 'textarea', 'time', 'url', 'week',
 ];
 
 const hasLimit = (type) => {
@@ -131,7 +150,16 @@ const temporal = ['date', 'datetime-local', 'time'];
 export default {
   name: 'single-value-input',
 
-  emits: ['blur', 'change', 'focus', 'invalid', 'keydown', 'keypress', 'keyup'],
+  emits: [
+    'blur',
+    'change',
+    'checkedchange',
+    'focus',
+    'invalid',
+    'keydown',
+    'keypress',
+    'keyup',
+  ],
 
   props: {
     /**
@@ -145,6 +173,33 @@ export default {
      * @property {string} accesskey
      */
     accesskey: { type: String, required: false, default: '' },
+
+    /**
+     * A function that returns a (potentially) modified version of
+     * the user input.
+     *
+     * This could be useful for:
+     * * removing non-numeric characters from phone numbers
+     *   Or
+     * * more stripping illegal characters of user email addresses.
+     *   Or
+     * * for checkbox fields, ensuring that mutually exclusive
+     *   options in a checkbox list cannot be checked
+     *
+     * > __Note:__ It's possible for this validation to be bypassed
+     * >           in the browser so all validation __*must*__ be
+     * >           duplicated on the server to ensure the user
+     * >           doesn't submit bad data.
+     *
+     * > __Note also:__ For `<INPUT>` and `<TEXTAREA>` fields this
+     * >           function is called on the `keyup` event, but for
+     * >           checkbox fields, it is passed to the `change`
+     * >           `CheckboxList` component and called on and `blur`
+     * >           events.
+     *
+     * @property {Function} customValidation
+     */
+    customSanitisation: { type: Function, required: false, default: null },
 
     /**
      * A function that returns a string error message if input is
@@ -168,12 +223,20 @@ export default {
     customValidation: { type: Function, required: false, default: null },
 
     /**
+     * Whether or not to remove duplicate options from
+     * `RadioSelectInput` options list.
+     *
+     * @property {boolean} dedupe
+     */
+    dedupe: { type: Boolean, required: false, default: false },
+
+    /**
      * Whether or not the field is disabled
      * (i.e. user is prevented from interacting with the field)
-
-     * A field should only be disabled when it is useful for the user to
-     * see that the field is there but they cannot enter anything until
-     * something changes.
+     *
+     * A field should only be disabled when it is useful for the user
+     * to see that the field is there but they cannot enter anything
+     * until something changes.
      *
      * e.g. if you have primary and secondary email
      * fields you would disable the secondary field until the primary
@@ -284,6 +347,23 @@ export default {
     helpTxt: { type: String, required: false, default: '' },
 
     /**
+     * Whether or not to hide the label from screen. (Label is still visible to screen readers)
+     *
+     * Sometimes a design uses non-standard format for input fields
+     * and their labels.
+     * e.g. When the (visible) label for a field is use in such away
+     *      that the input field's value forms first part of a
+     *      sentance and the label form the rest of the sentance.
+     *      In this case the screen reader usage of the label may
+     *      not make any sense. In this case, we use the `help-txt`
+     *      value as the visible label and hide the field's actual
+     *      label from screen users.
+     *
+     * @property {boolean} helpFirst
+     */
+    hideLabel: { type: Boolean, required: false, default: false },
+
+    /**
      * Text to label the field
      *
      * This is an accessiblity requirement.
@@ -298,6 +378,16 @@ export default {
      * @property {string} errorMsg
      */
     label: { type: String, required: true },
+
+    /**
+     * When the options for this item were last updated
+     *
+     * > __Note:__ If lastUpdated is not set, this field will not
+     * >           update the options if changed by the parent.
+     *
+     * @property {number} lastUpdated
+     */
+    lastUpdated: { type: Number, requred: false, default: -1 },
 
     /**
      * Maximum number of characters user can enter into this field
@@ -354,6 +444,8 @@ export default {
      * @property {number|string} maxVal
      */
     minVal: { required: false },
+
+    noLabel: { type: Boolean, required: false, default: false },
 
     /**
      * Whether or not to show the empty value if the default value
@@ -421,6 +513,13 @@ export default {
      * @property {<{key: string, value: string}>[]} options
      */
     options: { type: Array, required: false },
+
+    /**
+     * Override text to use for optional value fields
+     *
+     * @property {string} optionalTxt
+     */
+    optionalText: { type: String, required: false, default: 'optional' },
 
     /**
      * JavaScript regular expression for validating string input
@@ -506,6 +605,19 @@ export default {
      * @property {number} rows
      */
     rows: { required: false },
+
+    /**
+     * Sometimes you need a user to enter the same value into two
+     * different field to ensure they've got it right (e.g. phone
+     * number, password, or email). You use this attribute to provide
+     * the value that must be compared.
+     *
+     * If `same-as-value` is not null and is different to the current
+     * value, then the current value will be deemed invalid
+     *
+     * @property {string|null} sameAsValue
+     */
+    sameAsValue: { required: false, default: null },
 
     /**
      * Whether or not to use built in browser/system spell check
@@ -622,7 +734,7 @@ export default {
     value: { required: false, default: '' },
   },
 
-  components: { RadioSelectInput },
+  components: { RadioSelectInput, CheckboxList },
 
   data() {
     return {
@@ -683,6 +795,15 @@ export default {
       customVal: null,
 
       /**
+       * Get the start of an error message string for a given method
+       *
+       * @param {string} method Name of method that might throw an error
+       *
+       * @returns {string}
+       */
+      ePre: null,
+
+      /**
        * Extra error message generated by custom validation function
        *
        * @property {string} extraError
@@ -703,10 +824,35 @@ export default {
        *
        * @property {boolean} hasHelp
        */
-      hasHelp: true,
+      hasHelp: false,
 
-      iconPre: '',
+      /**
+       * Custom icon to render in end of an input field
+       * (e.g. "%" or material icon: "percent")
+       *
+       * @property {string} iconPost
+       */
       iconPost: '',
+
+      /**
+       * Holder for iconPost value if the field is invalid
+       *
+       * If there is a post icon and the field is invalid, the
+       * invalid icon will be shown. While the invalid icon is
+       * shown, we need to hold the post icon value somewhere so it
+       * can be put back when the field becomes valid again.
+       *
+       * @property {string} iconPostTmp
+       */
+      iconPostTmp: '',
+
+      /**
+       * Custom icon to render in front of an input field
+       * (e.g. "$" or material icon: "attach_money")
+       *
+       * @property {string} iconPre
+       */
+      iconPre: '',
 
       /**
        * String to render when field is not required
@@ -714,6 +860,21 @@ export default {
        * @property {string} optionalTxt
        */
       optionalTxt: '',
+
+      /**
+       * Material Design icon name for the icon to display in the
+       * toggle password button
+       *
+       * @property {string} passwordBtnIcon
+       */
+      passwordBtnIcon: 'visibility',
+
+      /**
+       * Screen reader text for toggle password button
+       *
+       * @property {string} passwordBtnIcon
+       */
+      passwordBtnTxt: 'Show password',
 
       /**
        * String to render when field is required
@@ -775,7 +936,7 @@ export default {
       let output = '';
       let sep = '';
 
-      if (this.hasHelp !== '') {
+      if (this.hasHelp === true) {
         output = this.getID('help');
         sep = ' ';
       }
@@ -797,11 +958,22 @@ export default {
     errorIconClass() {
       const tmp = 'single-val-input__error-icon';
 
-      const output = ((this.hasError === true && this.showError === true) || this.externalInvalid === true)
+      let output = ((this.hasError === true && this.showError === true) || this.externalInvalid === true)
         ? `${tmp} ${tmp}--show`
         : tmp;
 
+      if (this.isCheckable === true) {
+        output += ` ${tmp}--checkable`;
+      }
+
       return `material-icons ${output}`;
+    },
+
+    errorMsgClass() {
+      const tmp = 'single-val-input__error';
+      return (this.isCheckable === true)
+        ? `${tmp} ${tmp}--checkable`
+        : tmp;
     },
 
     helpClass() {
@@ -821,7 +993,11 @@ export default {
     },
 
     iconPostCLass() {
-      const tmp = 'input-icon input-icon--post';
+      const err = (this.showError)
+        ? 'single-val-input__error-icon'
+        : '';
+      const tmp = `input-icon input-icon--post ${err}`;
+
       return (this.iconPost.length > 1)
         ? `${tmp} material-icons`
         : tmp;
@@ -837,12 +1013,20 @@ export default {
       const prefix = 'single-val-input__input-wrap';
       let output = prefix;
 
+      if (this.type === 'radio' || this.type === 'checkbox') {
+        output += ` ${prefix}--checkable`;
+      }
+
       if (temporal.indexOf(this.type) > -1) {
         output += ` ${prefix}--auto`;
       }
 
       if (noBorder.indexOf(this.type) > -1) {
         output += ` ${prefix}--no-border`;
+      }
+
+      if (this.type === 'password' && this.noToggle === false) {
+        output += ` ${prefix}--password`;
       }
 
       if (this.showError === true || this.externalInvalid === true) {
@@ -853,24 +1037,29 @@ export default {
     },
 
     /**
-     * List of class names to add to the input field
+     * List of class names to add to the input field element
      *
      * @returns {string}
      */
     inputFieldClass() {
       const tmp = 'single-val-input__input';
+      let output = tmp;
 
-      let output = (this.type !== 'password' || this.noToggle === true)
-        ? tmp
-        : `${tmp} ${tmp}--password`;
+      if (this.type === 'password' && this.noToggle === false) {
+        output += ` ${tmp}--password`;
+      }
 
-      output += (this.iconPre.length > 0)
-        ? ` ${tmp} ${tmp}--icon-pre`
-        : '';
+      if (this.showError === true || this.externalInvalid === true) {
+        output += ` ${tmp}--invalid`;
+      }
 
-      output += (this.iconPost.length > 0)
-        ? ` ${tmp} ${tmp}--icon-post`
-        : '';
+      if (this.iconPre !== '') {
+        output += ` ${tmp}--icon-pre`;
+      }
+
+      if (this.iconPost !== '') {
+        output += ` ${tmp}--icon-post`;
+      }
 
       return output;
     },
@@ -880,8 +1069,8 @@ export default {
      *
      * @returns {boolean} TRUE if type is "radop". FALSE otherwise
      */
-    isRadio() {
-      return (this.type === 'radio');
+    isCheckable() {
+      return (this.type === 'radio' || this.type === 'checkbox');
     },
 
     /**
@@ -892,7 +1081,9 @@ export default {
      *                    FALSE otherwise
      */
     isSelect() {
-      return (this.type === 'select' || this.type === 'radio' || this.type === 'combobox');
+      const types = ['combobox', 'radio', 'select'];
+
+      return types.indexOf(this.type) > -1;
     },
 
     /**
@@ -902,6 +1093,13 @@ export default {
      */
     isTextarea() {
       return (this.type === 'textarea');
+    },
+
+    labelClass() {
+      const tmp = 'single-val-input__label';
+      return (this.hideLabel === true)
+        ? `${tmp} visually-hidden`
+        : tmp;
     },
 
     /**
@@ -946,6 +1144,18 @@ export default {
       return (hasCharLimit(this.type) && typeof this.minLength !== 'undefined')
         ? this.minLength
         : undefined;
+    },
+
+    showLabel() {
+      if (this.type !== 'checkbox') {
+        return true;
+      }
+
+      return (this.label !== '' || this.noLabel === false);
+    },
+
+    showPostIcon() {
+      return (this.iconPost !== '');
     },
 
     typeAttr() {
@@ -1023,6 +1233,10 @@ export default {
   },
 
   methods: {
+    checkedChanged(event) {
+      this.$emit('checkedchange', event);
+    },
+
     /**
      * Get the custom ID (or `for` attribute) for a given element
      *
@@ -1044,6 +1258,7 @@ export default {
      */
     selectInvalid(isInvalid) {
       this.showError = isInvalid;
+      this.$emit('invalid', this.showError);
     },
 
     /**
@@ -1070,13 +1285,27 @@ export default {
      */
     hasChanged(e) {
       this.showError = !e.target.checkValidity();
-
       this.currentValue = e.target.value;
 
-      if (this.showError === false && this.customVal !== null) {
+      if (this.showError === false && this.customVal !== null
+          && (this.required === true || this.currentValue !== '')
+      ) {
         this.extraError = this.customVal(this.currentValue);
         this.showError = (typeof this.extraError === 'string' && this.extraError.trim() !== '');
+      } else if (this.sameAsValue !== null && this.currentValue !== this.sameAsValue) {
+        this.showError = true;
       }
+
+      if (this.showError) {
+        if (this.iconPost !== 'priority_high') {
+          this.iconPostTmp = this.iconPost;
+        }
+        this.iconPost = 'priority_high';
+      } else {
+        this.iconPost = this.iconPostTmp;
+      }
+
+      this.$emit('invalid', this.showError);
 
       if (this.showError === false) {
         this.$emit('change', e);
@@ -1142,14 +1371,8 @@ export default {
      * key
      */
     keyupHandler(event) {
-      if (this.standardVal !== null
-          && typeof this.standardVal.sanitise === 'function'
-      ) {
-        const tmp = this.standardVal.sanitise(event.target.value);
-
-        if (tmp !== '') {
-          event.target.value = this.standardVal.sanitise(event.target.value); // eslint-disable-line
-        }
+      if (this.customSan !== null && typeof this.customSan === 'function') {
+        event.target.value = this.customSan(event.target.value); // eslint-disable-line
       } else {
         this.$emit(event.type, event);
       }
@@ -1178,11 +1401,24 @@ export default {
       e.preventDefault();
 
       this.showPassword = !this.showPassword;
+
+      let text = 'Show';
+      let icon = '';
+
+      if (this.showPassword === true) {
+        text = 'Hide';
+        icon = '_off';
+      }
+
+      this.passwordBtnIcon = `visibility${icon}`;
+      this.passwordBtnTxt = `${text} password`;
     },
   },
 
   beforeMount() {
-    if (typeof this.label !== 'string' || this.label.trim() === '') {
+    if ((typeof this.label !== 'string' || this.label.trim() === '')
+      && this.noLabel === false
+    ) {
       // For accessibility reasons we MUST have a non-empty label
       throw new Error(
         '<single-value-input> component requires label attribute '
@@ -1196,7 +1432,7 @@ export default {
       throw new Error(
         '<single-value-input> component requires type attribute '
         + 'to be a valid (non-button) HTML input "type" value '
-        + '(excluding "file" & "checkbox" types)',
+        + '(excluding "file" types)',
       );
     }
 
@@ -1208,6 +1444,8 @@ export default {
       }
     }
 
+    this.ePre = getEpre('SingleValueInput', this.fieldId);
+
     // Make sure we have a default current value
     this.currentValue = (typeof this.value !== 'undefined')
       ? this.value
@@ -1215,6 +1453,9 @@ export default {
 
     // Do we have a help text block to show the user?
     this.hasHelp = this.notEmpty('help', 'helpTxt');
+
+    this.iconPost = '';
+    this.iconPre = '';
 
     // Check if we should be using common validation for this input
     if (typeof this.validationType === 'string'
@@ -1224,7 +1465,7 @@ export default {
       const vType = this.validationType.replace(/[^a-z]+/ig, '').trim().toLowerCase();
 
       if (typeof validators[vType] === 'undefined') {
-        console.warn(
+        console.warn( // eslint-disable-line
           `"${this.validationType}" does not match any known validation types. `
           + 'Known validation types are: "'
           + `${Object.keys(validators).join('", "')}"`,
@@ -1242,8 +1483,8 @@ export default {
 
         this.customErr = this.standardVal.error;
 
-        if (this.standardVal.pattern.trim() !== '') {
-          this.customPat = this.standardVal.pattern;
+        if (this.standardVal.pattern.source !== '') {
+          this.customPat = this.standardVal.pattern.source;
         }
 
         if (this.standardVal.placeholder.trim() !== '') {
@@ -1258,6 +1499,10 @@ export default {
           this.iconPost = this.standardVal.postIcon;
         }
       }
+    }
+
+    if (typeof this.customSanitisation === 'function') {
+      this.customSan = this.customSanitisation;
     }
 
     if (typeof this.customValidation === 'function') {
@@ -1280,250 +1525,21 @@ export default {
       this.iconPre = this.prefixIcon;
     }
 
-    if (typeof this.suffixIconIcon === 'string') {
+    if (typeof this.suffixIcon === 'string') {
       this.iconPost = this.suffixIcon;
     }
+
+    this.iconPostTmp = this.iconPost;
 
     // Do we have an error message to show the user?
     this.hasError = this.notEmpty('error', 'customErr');
 
     if (this.requiredRev === true) {
-      this.optionalTxt = ' (optional)';
+      this.optionalTxt = (typeof this.optionalText === 'string' && this.optionalText.trim() !== '')
+        ? ` (${this.optionalText.trim()})`
+        : ' (optional)';
       this.requiredTxt = '';
     }
   },
 };
 </script>
-
-<style lang="scss">
-@import '@/assets/scss/config';
-@import '@/assets/scss/helpers';
-@import '@/assets/scss/base';
-
-$border-rad: 0.3rem;
-
-.single-val-input {
-  margin: 0;
-  padding: 0;
-  font-family: Poppins, Arial, Helvetica, sans-serif;
-  list-style-type: none;
-  text-align: left;
-
-  * {
-    box-sizing: border-box;
-  }
-
-  &:nth-child(n + 2) {
-    margin-top: 1rem;
-  }
-
-  &__input-wrap {
-    border: 0.05rem solid $tsf-field-borders;
-    border-radius: $border-rad;
-    display: inline-block;
-    position: relative;
-    width: 100%;
-
-    &:focus-within {
-      outline: 0.2rem dotted $tsf-bright-blue;
-      outline-offset: 0.2rem;
-    }
-
-    &--invalid {
-      border-color: $tsf-red;
-
-      > ul {
-        margin-bottom: 0.5rem !important;
-      }
-    }
-
-    &--auto {
-      width: auto;
-    }
-
-    &--no-border {
-      border: none;
-
-      .single-val-input {
-        &__error {
-          border-top-left-radius: $border-rad;
-          border-top-right-radius: $border-rad;
-        }
-      }
-    }
-  }
-
-  &__label {
-    box-sizing: border-box;
-    display: block;
-    font-weight: bold;
-    padding: 0.5rem 2rem 0.5rem 0;
-    position: relative;
-    text-align: left;
-    text-align: start;
-    white-space: normal;
-
-    // &::after {
-    //   content: ':';
-    // }
-  }
-
-  &:first-child {
-    .single-val-input {
-      &__label {
-        padding-top: 0;
-      }
-
-      &__error {
-        &-icon {
-          top: 37.5%;
-        }
-      }
-    }
-  }
-
-  &__error {
-    background-color: $tsf-red;
-    border: 0.05rem solid $tsf-red;
-    border-bottom-left-radius: $border-rad;
-    border-bottom-right-radius: $border-rad;
-    color: $white;
-    display: block;
-    text-align: left;
-    padding: 0.5rem 0.8rem;
-
-    > :first-child {
-      margin-top: 0;
-      padding-top: 0;
-    }
-
-    * {
-      color: $white;
-
-      a {
-        color: $tsf-bright-blue;
-      }
-    }
-
-    > :last-child {
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    &-icon {
-      background: $tsf-red;
-      border-radius: 50rem;
-      color: $white;
-      display: inline-block;
-      font-size: 0.75rem !important;
-      line-height: 0.77rem !important;
-      opacity: 0;
-      padding: 0.275rem;
-      position: absolute;
-      // left: 0.5rem;
-      right: -0.5rem;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      transition: opacity ease-in-out 0.3s;
-      width: 1.25rem;
-      height: 1.25rem;
-      text-align: center;
-
-      &--show {
-        opacity: 1;
-      }
-    }
-  }
-
-  &__help {
-    padding-top: 0.5rem;
-    font-size: 0.875rem;
-
-    > :first-child {
-      margin-top: 0;
-      padding-top: 0;
-    }
-
-    &--after {
-      > :last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-      }
-    }
-  }
-
-  &__input {
-    background-color: $white;
-    border: none;
-    border-radius: $border-rad;
-    box-sizing: border-box;
-    display: block;
-    font-family: 'Courier New', Courier, monospace;
-    width: 100%;
-    color: $black;
-    padding: 0.6rem 0.8rem 0.5rem;
-    font-size: 1rem;
-
-    &:focus {
-      outline: none;
-    }
-
-    &:placeholder-shown {
-      color: $black;
-    }
-
-    &[type=date], &[type=time], &[type=datetime-local] {
-      width: auto;
-    }
-
-    &--password {
-      padding-right: 2.6rem;
-    }
-
-    &[type=range] {
-      padding: 0;
-    }
-
-    &--icon-pre {
-      padding-left: 2rem;
-    }
-
-    &--icon-post {
-      padding-right: 2.6rem;
-    }
-  }
-
-  &__required {
-    font-style: italic;
-    font-size: 0.875rem;
-    font-weight: normal;
-  }
-
-  &__outer {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-  }
-}
-
-.input-icon {
-  background-color: transparent;
-  color: $light-grey-para;
-  border-radius: 0.2rem;
-  display: inline-block;
-  position: absolute;
-  top: 0;
-
-  &--pre {
-    left: -0.1rem;
-    line-height: 1.5rem;
-    padding: 0.325rem 0.25rem 0.325rem 0.45rem;
-  }
-
-  &--password-toggle {
-    line-height: 0.65rem;
-    padding: 0.325rem 0.5rem;
-    right: -0.1rem;
-  }
-}
-</style>

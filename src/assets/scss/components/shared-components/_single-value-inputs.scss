@@ -1,0 +1,284 @@
+@import '../../config';
+@import '../../helpers';
+@import '../../base';
+
+$border-rad: 0.3rem;
+
+.single-val-input {
+  margin: 0;
+  padding: 0;
+  font-family: Poppins, Arial, Helvetica, sans-serif;
+  list-style-type: none;
+  text-align: left;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  &:nth-child(n + 2) {
+    margin-top: 1rem;
+  }
+
+  &__input-wrap {
+    border: 0.05rem solid $tsf-field-borders;
+    border-radius: $border-rad;
+    display: inline-block;
+    position: relative;
+    width: 100%;
+
+    &:focus-within {
+      outline: 0.2rem dotted $tsf-bright-blue;
+      outline-offset: 0.2rem;
+    }
+
+    &--invalid {
+      border-color: $tsf-red;
+
+      > ul {
+        margin-bottom: 0.5rem !important;
+      }
+    }
+
+    &--auto {
+      width: auto;
+    }
+
+    &--no-border {
+      border: none;
+
+      .single-val-input {
+        &__error {
+          border-top-left-radius: $border-rad;
+          border-top-right-radius: $border-rad;
+        }
+      }
+    }
+    &--password {
+      .single-val-input {
+        &__input {
+          width: calc(100% - 2rem);
+        }
+
+        &__error-icon {
+          display: none;
+          right: 2rem;
+        }
+      }
+    }
+  }
+
+  &__label {
+    box-sizing: border-box;
+    display: block;
+    font-weight: bold;
+    padding: 0.5rem 2rem 0.5rem 0;
+    position: relative;
+    text-align: left;
+    text-align: start;
+    white-space: normal;
+
+    // &::after {
+    //   content: ':';
+    // }
+  }
+
+  &:first-child {
+    .single-val-input {
+      &__label {
+        padding-top: 0;
+      }
+
+      // &__error {
+      //   &-icon {
+      //     top: 37.5%;
+      //   }
+      // }
+    }
+  }
+
+  &__error {
+    background-color: $tsf-red;
+    border: 0.05rem solid $tsf-red;
+    border-bottom-left-radius: $border-rad;
+    border-bottom-right-radius: $border-rad;
+    color: $white;
+    display: block;
+    text-align: left;
+    padding: 0.5rem 0.8rem;
+
+    > :first-child {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    * {
+      color: $white;
+
+      a {
+        color: $tsf-bright-blue;
+      }
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    &-icon {
+      background: $tsf-red;
+      border-radius: 50rem;
+      color: $white;
+      display: inline-block;
+      font-size: 0.75rem !important;
+      line-height: 0.77rem !important;
+      opacity: 0;
+      padding: 0.275rem 0.25rem;
+      position: absolute;
+      // left: 0.5rem;
+      right: -0.2rem;
+      // top: 50%;
+      top: 1.85rem;
+      transform: translate(-50%, -50%);
+      transition: opacity ease-in-out 0.3s;
+      width: 1.25rem;
+      height: 1.25rem;
+      text-align: center;
+
+      &--show {
+        opacity: 1;
+      }
+    }
+  }
+
+  &__help {
+    padding-top: 0.5rem;
+    font-size: 0.875rem;
+
+    > :first-child {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    &--after {
+      > :last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+    }
+  }
+
+  &__input {
+    background-color: $white;
+    border: none;
+    border-radius: $border-rad;
+    box-sizing: border-box;
+    display: block;
+    font-family: $tsf-font;
+    width: 100%;
+    color: $black;
+    // padding: 0.6rem 0.8rem 0.5rem;
+    padding: 1rem 1rem 0.95rem 1rem;
+    font-size: 1rem;
+
+    &:focus {
+      outline: none;
+    }
+
+    &:placeholder-shown {
+      color: $black;
+    }
+    &:disabled {
+      background-color: $middle-light-grey;
+      color: $disabled-txt;
+      cursor: default;
+      cursor: not-allowed;
+    }
+
+    &[type=date], &[type=time], &[type=datetime-local] {
+      width: auto;
+    }
+
+    &--password {
+      padding-right: 2.6rem;
+    }
+
+    &[type=range] {
+      padding: 0;
+    }
+
+    &--icon-pre {
+      padding-left: 2rem;
+    }
+
+    &--icon-post {
+      padding-right: 2.6rem;
+    }
+
+    &--invalid {
+      padding-right: 2rem;
+    }
+  }
+
+  &__required {
+    // font-style: italic;
+    // font-size: 0.875rem;
+    // ------------------------------------------
+    // "!important" is required when using single
+    // value input outside of InputsWithInfo
+    font-weight: normal !important;
+    // ------------------------------------------
+  }
+
+  &__outer {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.tsf-select {
+  + .single-val-input {
+    &__error {
+      &-icon {
+        right: 3.1rem;
+        top: 1.7rem;
+      }
+    }
+  }
+
+  &--error {
+    + .single-val-input__error-icon {
+      display: none;
+    }
+  }
+}
+
+.input-icon {
+  background-color: transparent;
+  color: $light-grey-para;
+  border-radius: 0.2rem;
+  display: inline-block;
+  position: absolute;
+  top: 0;
+
+  &--password-toggle {
+    border: none !important;
+    line-height: 0.65rem;
+    padding: 0.95rem 0.5rem;
+    right: -0.05rem;
+  }
+
+  &--pre {
+    left: 0.35rem;
+    line-height: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &--post {
+    line-height: 1.5rem;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}

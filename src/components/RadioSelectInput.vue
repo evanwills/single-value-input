@@ -1,16 +1,20 @@
 <template>
-  <ul v-if="renderType === 'radio'" class="radio-group" role="group" :aria-labelledby="fieldId">
+  <ul v-if="renderType === 'radio'"
+      class="checkable-group"
+      role="group"
+      :aria-labelledby="fieldId">
     <li v-for="(option, i) of usableOptions" v-bind:key="i">
-      <input type="radio" class="visually-hidden"
-            :accesskey="accessKeyAttr"
+      <input  :accesskey="accessKeyAttr"
             :aria-describedby="getDescribedbyIDs"
             :checked="isSelected(option)"
-            :disabled="disabledAttr"
+            class="visually-hidden"
+            :disabled="disabledOption(option)"
             :id="option.id"
             :name="radioName"
             :readonly="readonlyAttr"
             :required="requiredAttr"
             :tabindex="tabIndex"
+              :type="type"
             :value="option.value"
             v-on:change="radioChanged($event)"
             v-on:blur="radioChanged($event)" />
@@ -25,6 +29,7 @@
             :disabled="disabledAttr"
             :id="fieldId"
             :list="dataListId"
+            :placeholder="comboValue"
             :readonly="readonlyAttr"
             :required="requiredAttr"
             role="combobox"
@@ -52,8 +57,9 @@
             v-on:change="selectChanged($event)"
             v-on:blur="selectChanged($event)">
       <option v-for="(option) of usableOptions"
-              :value="option.value"
+              :disabled="disabledOption(option)"
               :selected="isSelected(option)"
+              :value="option.value"
               v-bind:key="option.value">
         {{ option.label }}
       </option>
@@ -62,28 +68,17 @@
 </template>
 
 <script>
-import { normaliseOptions } from './radioSelect.utils';
-
-/**
- * Add an ID string for each item in the array.
- *
- * @param {string} fieldID ID for the label for the whole radio group
- *
- * @returns {Function} A function that can be passed to Array.map()
- */
-const setOptionIDs = (fieldID) => (item, index) => ({ ...item, id: `${fieldID}--${index}` });
-
-/**
- * Check whether a value is boolean and TRUE
- *
- * @param {any} input A value to be tested
- *
- * @returns {boolean} TRUE if the value is boolean and TRUE.
- *                    FALSE otherwise.
- */
-const isBoolTrue = (input) => (typeof input === 'boolean' && input === true);
+import { normaliseOptions, setOptionIDs } from './radioSelect.utils';
+import { getEpre, isBoolTrue } from '../../../utils/general-utils';
 
 const getLabels = (option) => option.label;
+
+/**
+ * Timestamp for when data was last received from the server
+ *
+ * @var {number}
+ */
+let localLastUpdated = 0;
 
 /**
  * Remove any empty options from select field options
@@ -96,7 +91,7 @@ const getLabels = (option) => option.label;
 const removeEmpty = (option) => (option.value.trim() !== '');
 
 export default {
-  name: 'accessible-select',
+  name: 'radio-select-input',
 
   emits: ['blur', 'change', 'focus', 'invalid', 'keyup'],
 
@@ -108,6 +103,13 @@ export default {
      * @property {string} accessKey
      */
     accessKey: { type: String, required: false },
+
+    /**
+     * Whether or not to remove duplicate options from options list.
+     *
+     * @property {boolean} dedupe
+     */
+    dedupe: { type: Boolean, required: false, default: false },
 
     /**
      * For select fields where no default is currently set, this
@@ -171,6 +173,16 @@ export default {
     isReadonly: { type: Boolean, required: false, default: false },
 
     /**
+     * When the options for this item were last updated
+     *
+     * > __Note:__ If lastUpdated is not set, this field will not
+     * >           update the options if changed by the parent.
+     *
+     * @property {number} lastUpdated
+     */
+    lastUpdated: { type: Number, requred: false, default: -1 },
+
+    /**
      * Whether or not to show the empty value if the default value
      * is non-empty
      *
@@ -201,6 +213,16 @@ export default {
      */
     tabIndex: { type: Number, required: false, default: 0 },
 
+    /**
+     * Type of field being rendered
+     *
+     * Options are:
+     * * `select` (default)
+     * * `radio`
+     * * `combobox` (also, known as typeahead)
+     *
+     * @property {string} type
+     */
     type: { type: String, required: false, default: 'select' },
 
     /**
@@ -213,6 +235,8 @@ export default {
 
   data() {
     return {
+      comboValue: '',
+
       /**
        * Current value of the field
        *
@@ -221,13 +245,14 @@ export default {
       currentValue: '',
 
       /**
-       * List of options to be rendered
+       * Get the start of an error message (or console group name) string
+       * for a given method
        *
-       * Each option object has the following properties
+       * @param {string} method Name of method that might throw an error
        *
-       * @property {Object[]}
+       * @returns {string}
        */
-      usableOptions: [],
+      ePre: null,
 
       /**
        * List of options filtered by existing string in text input
@@ -259,15 +284,13 @@ export default {
       renderType: 'select',
 
       /**
-       * The name of the attribute used to indicate the preset value
-       * for the field
+       * List of options to be rendered
        *
-       * * For <SELECT> field the correct attribute is `selected`
-       * * For <INPUT type="radio"> the correct attribute is `checked`
+       * Each option object has the following properties
        *
-       * @property {string} valueAttr
+       * @property {Object[]}
        */
-      valueAttr: 'selected',
+      usableOptions: [],
 
       /**
        * Whether or not to render the empty option for <SELECT>
@@ -279,6 +302,17 @@ export default {
        * @property {boolean} useEmpty
        */
       useEmpty: false,
+
+      /**
+       * The name of the attribute used to indicate the preset value
+       * for the field
+       *
+       * * For <SELECT> field the correct attribute is `selected`
+       * * For <INPUT type="radio"> the correct attribute is `checked`
+       *
+       * @property {string} valueAttr
+       */
+      valueAttr: 'selected',
     };
   },
 
@@ -342,11 +376,12 @@ export default {
      * @returns {string}
      */
     radioClass() {
-      const base = 'radio-group__label';
+      const base = 'checkable-group__label';
+      const output = `${base} ${base}--${this.type}`;
 
       return (this.currentValue === '')
-        ? `${base} ${base}--empty`
-        : base;
+        ? `${output} ${base}--empty`
+        : output;
     },
 
     /**
@@ -356,7 +391,9 @@ export default {
      * @returns {string}
      */
     radioName() {
-      return `${this.fieldId}-radio`;
+      return (this.type === 'radio')
+        ? `${this.fieldId}-radio`
+        : undefined;
     },
 
     /**
@@ -405,6 +442,21 @@ export default {
 
   methods: {
     /**
+     * Sets the disabled attribute on field
+     *
+     * @returns {true|undefined}
+     */
+    disabledOption(item) {
+      if (this.isDisabled === true) {
+        return true;
+      }
+
+      return (typeof item.disabled === 'boolean' && item.disabled === true)
+        ? true
+        : undefined;
+    },
+
+    /**
      * Handle when input for combo box changes
      *
      * @param {Event} e
@@ -417,7 +469,10 @@ export default {
         for (let a = 0; a < this.usableOptions.length; a += 1) {
           const option = this.usableOptions[a];
 
-          if ((option.label.toLowerCase().includes(newVal) || option.value.toLowerCase().includes(newVal))) {
+          if (option.label.toLowerCase().includes(newVal)
+            || option.value.toLowerCase().includes(newVal)
+          ) {
+            // this.comboValue = option.label;
             newVal = option.label;
             ok = true;
             break;
@@ -480,7 +535,7 @@ export default {
      * @param {{key: string|number, value: string}} option single select/radio
      */
     isSelected(option) {
-      const valueAttr = (this.isRadio === true)
+      const valueAttr = (this.type === 'radio')
         ? 'checked'
         : 'selected';
 
@@ -551,6 +606,9 @@ export default {
         for (let a = 0; a < this.usableOptions.length; a += 1) {
           if (this.usableOptions[a].value === this.currentValue) {
             // All good! We found a match
+            if (this.type === 'combobox') {
+              this.comboValue = this.usableOptions[a].label;
+            }
             ok = true;
             break;
           }
@@ -563,6 +621,9 @@ export default {
             if (this.usableOptions[a].label === this.currentValue) {
               // All good! We found a match
               this.currentValue = this.usableOptions[a].value;
+              if (this.type === 'combobox') {
+                this.comboValue = this.usableOptions[a].label;
+              }
               ok = true;
               break;
             }
@@ -584,7 +645,9 @@ export default {
      */
     setUsableOptions() {
       // Make sure options are useable
-      let options = normaliseOptions(this.options, this.currentValue);
+      let options = normaliseOptions(
+        this.options, this.currentValue, this.dedupe,
+      );
 
       options = (this.useEmpty === true)
         ? [{ value: '', label: this.emptyTxt }, ...options]
@@ -621,6 +684,12 @@ export default {
   },
 
   beforeMount() {
+    if (localLastUpdated === 0) {
+      localLastUpdated = this.lastUpdated;
+    }
+
+    this.ePre = getEpre('RadioSelectInput', this.fieldId);
+
     // Get the data type of the supplied default value
     switch (typeof this.value) {
       case 'string':
@@ -661,235 +730,13 @@ export default {
     }
   },
 
-  // updated() {
-  //   console.log('RadioSelectInput.updated()');
-  //   if (doUpdate === false) {
-  //     console.log('RadioSelectInput.updated() - do actual work');
-  //     doUpdate = true;
+  updated() {
+    if (localLastUpdated < this.lastUpdated) {
+      localLastUpdated = this.lastUpdated;
 
-  //     this.updateBools();
-  //     this.setUsableOptions();
-
-  //     setTimeout(() => { doUpdate = false; }, 100);
-  //     console.log('RadioSelectInput.updated() - work done');
-  //   }
-  // },
+      this.setUsableOptions();
+      this.validateOptions();
+    }
+  },
 };
 </script>
-
-<style lang="scss" scoped>
-@import '../assets/scss/config';
-
-.tsf-select {
-  align-items: center;
-  background-color: $white;
-  border: none;
-  border-radius: 0.3125rem;
-  cursor: pointer;
-  display: block;
-  min-width: 10rem;
-  padding: 0;
-  position: relative;
-  width: 100%;
-
-  &--error {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-  }
-
-  &--required {
-    border-color: $tsf-red;
-  }
-
-  &::before {
-    content: "";
-    height: 0.5em;
-    outline: none;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 3rem;
-    height: 100%;
-    border-left: 0.05rem solid $regular-grey;
-  }
-
-  &::after {
-    background-color: $black;
-    clip-path: polygon(100% 0%, 0 0%, 50% 100%);
-    content: "";
-    height: 0.5em;
-    outline: none;
-    position: absolute;
-    top: 50%;
-    right: 1.1rem;
-    transform: translateY(-50%) rotate(0deg);
-    transition: transform ease-in-out 0.3s;
-    width: 0.7em;
-  }
-
-  &:focus-within {
-    outline: 0.1rem solid $utility-blue;
-    outline-offset: 0.1rem;
-
-    &::after {
-      transform: translateY(-50%) rotate(180deg);
-      transition: transform ease-in-out 0.3s;
-    }
-  }
-
-  > select {
-    appearance: none;
-    background-color: transparent;
-    border: none;
-    color: $dark-grey;
-    cursor: inherit;
-    display: block;
-    font-size: 1.1rem;
-    line-height: 1.5rem;
-    outline: none;
-    padding: 1rem 4rem 1rem 1rem;
-    width: 100%;
-
-    &::-ms-expand {
-      display: none;
-    }
-  }
-
-  &--combo {
-    > input {
-      appearance: none;
-      background-color: transparent;
-      border: none;
-      color: $dark-grey;
-      cursor: text;
-      display: block;
-      font-size: 1.1rem;
-      line-height: 1.5rem;
-      outline: none;
-      padding: 0.6rem 0.8rem 0.5rem;
-      width: 100%;
-
-      &::-ms-expand {
-        display: none;
-      }
-    }
-
-    > .material-icons {
-      color: $light-grey-para;
-      font-size: 1.7rem;
-      position: absolute;
-      top: 50%;
-      right: -0.35rem;
-      transform: translate(-50%, -50%);
-    }
-
-    &::after {
-      display: none;
-    }
-  }
-
-  option {
-    background-color: $white;
-    font-weight: normal;
-    font-size: 1rem;
-    padding: 0.5rem;
-  }
-}
-
-datalist {
-  option {
-    background-color: $white;
-    font-weight: normal;
-    font-size: 1rem;
-    padding: 0.5rem;
-  }
-}
-
-ul.radio-group {
-  // padding-top: 1rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-
-  > li {
-    text-align: left;
-
-  }
-
-  > li:nth-child(1n) {
-    margin-top: 0;
-  }
-
-  > li:nth-child(n + 2) {
-    margin-top: .25rem;
-  }
-
-  input:focus + .radio-group__label {
-    &--empty {
-      outline: 0.1rem solid $tsf-bright-blue;
-      outline-offset: 0.1rem;
-    }
-  }
-
-  & .radio-group__label {
-    display: block;
-    // font-weight: bold;
-    padding: 0.5rem 0 0.5rem 3rem;
-    position: relative;
-    width: 100%;
-
-    &:hover {
-      cursor: pointer;
-
-      &:before {
-        border-color: $tsf-bright-blue;
-      }
-    }
-
-    &::before, &::after {
-      content: '';
-      left: 0.75rem;
-      position: absolute;
-      top: 1.25rem;
-      transform: translate(-50%, -50%);
-    }
-
-    &::before {
-      background-color: $white;
-      border: 0.125rem solid $tsf-field-borders;
-      border-radius: 10rem;
-      box-sizing: border-box;
-      content: '';
-      display: inline-block;
-      height: 1.5rem;
-      width: 1.5rem;
-    }
-
-    &::after {
-      background-color: $tsf-bright-blue;
-      border-radius: 10rem;
-      display: inline-block;
-      height: 0.75rem;
-      opacity: 0;
-      transition: opacity ease-in-out 0.3s;
-      width: 0.75rem;
-    }
-  }
-
-  input {
-    &:focus {
-      &:before {
-        border-color: $tsf-bright-blue;
-      }
-    }
-
-    &:checked + .radio-group__label {
-      font-weight: bold;
-
-      &:after {
-        opacity: 1;
-      }
-    }
-  }
-}
-</style>

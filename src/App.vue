@@ -137,6 +137,7 @@
 
 <script setup>
 import SingleValueInput from './components/SingleValueInput.vue';
+import './assets/scss/main.scss';
 
 const multiOptions = [
   { value: '1', label: 'first option' },

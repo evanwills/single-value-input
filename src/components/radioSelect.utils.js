@@ -74,12 +74,128 @@ export const getKeyValueOptions = (optionList) => {
  *
  * @returns {string|number}
  */
-export const getSelectedLabel = (optionList, newValue, oldValue) => {
+export const getSelectedLabel = (optionList, newValue, oldValue = '') => {
   const option = findSelectedOption(optionList, newValue);
 
   return (option.length > 0)
     ? option[0].label
     : oldValue;
+};
+
+/**
+ * Get a pure function that can be passed to Array.map() to normalise
+ * the shape of options to ensure they work in a standard way for
+ * RadioSelectInput.
+ *
+ * @param {string|number} defaultVal default value preset by data
+ *                                   from the server
+ *
+ * @returns {function} A function that can be passed to Array.Map()
+ *                     that will normalise options for use by
+ *                     `RadioSelectInput`
+ */
+const getNormaliseSingleOption = (defaultVal) => (item) => {
+  const t = typeof item;
+  let _val = '';
+  let _label = '';
+  let vProp = '';
+  let lProp = '';
+
+  if (t === 'string' || t === 'number') {
+    _val = item;
+    _label = _val;
+  } else {
+    if (typeof item.label !== 'undefined') {
+      lProp = 'label';
+      vProp = (typeof item.value !== 'undefined')
+        ? 'value'
+        : 'label';
+    } else if (typeof item.key !== 'undefined') {
+      vProp = 'key';
+      lProp = (typeof item.value !== 'undefined')
+        ? 'value'
+        : 'key';
+    } else if (typeof item.Value !== 'undefined') {
+      vProp = 'Value';
+      lProp = (typeof item.Key !== 'undefined')
+        ? 'Key'
+        : 'Value';
+    } else if (typeof item.Key !== 'undefined') {
+      lProp = 'Key';
+      vProp = (typeof item.Key !== 'undefined')
+        ? 'Key'
+        : 'Value';
+    } else if (typeof item.Name !== 'undefined') {
+      lProp = 'Name';
+      vProp = (typeof item.Id !== 'undefined')
+        ? 'Id'
+        : 'Name';
+    }
+
+    if (vProp === '' || lProp === '') {
+      throw new Error(
+        'Could not determine either the `value` or `label` '
+        + `property of option: "${item.toString()}"`,
+      );
+    }
+
+    _val = item[vProp];
+    _label = item[lProp];
+  }
+
+  if (typeof _val !== 'string') {
+    _val = _val.toString();
+  }
+
+  if (typeof _label !== 'string') {
+    _label = _label.toString();
+  }
+
+  const _def = (typeof item.default !== 'undefined')
+    ? item.default
+    : (defaultVal === _val);
+
+  return {
+    ...item,
+    value: _val,
+    label: _label,
+    default: _def,
+  };
+};
+
+/**
+ * Remove duplicate options from list of options
+ *
+ * @param {array}   options List of options for RadioSelectInput that
+ *                          needs to have duplicates removed
+ * @param {boolean} dedupe  Whether or not to actually remove
+ *                          duplicates
+ *
+ * @returns {array} If `dedupe` is `FALSE`, then input options is
+ *                  returned unmodified. If `dedupe` is `TRUE` then
+ *                  and options that the same key or label as
+ *                  preceeding option will be removed.
+ */
+const deDupeOptions = (options, dedupe) => {
+  if (dedupe === false) {
+    return options;
+  }
+
+  const knownLabels = [];
+  const knownValues = [];
+  const output = [];
+
+  for (let a = 0; a < options.length; a += 1) {
+    if (knownValues.indexOf(options[a].value) === -1
+      && knownLabels.indexOf(options[a].label) === -1
+    ) {
+      knownValues.push(options[a].value);
+      knownLabels.push(options[a].label);
+      output.push(options[a]);
+    }
+  }
+
+  return output;
 };
 
 /**
@@ -89,7 +205,7 @@ export const getSelectedLabel = (optionList, newValue, oldValue) => {
  *
  * @returns {Object[]}
  */
-export const normaliseOptions = (options, defaultVal) => {
+export const normaliseOptions = (options, defaultVal, dedupe = false) => {
   let _options = [];
 
   if (Array.isArray(options) === false && typeof options === 'object') {
@@ -106,58 +222,43 @@ export const normaliseOptions = (options, defaultVal) => {
     _options = [...options];
   }
 
-  return _options.map((item) => {
-    const t = typeof item;
-    let _val = '';
-    let _label = '';
-    let vProp = '';
-    let lProp = '';
+  return deDupeOptions(
+    _options.map(getNormaliseSingleOption(defaultVal)),
+    dedupe,
+  );
+};
 
-    if (t === 'string' || t === 'number') {
-      _val = item;
-      _label = _val;
-    } else {
-      if (typeof item.label !== 'undefined') {
-        lProp = 'label';
-        vProp = (typeof item.value !== 'undefined')
-          ? 'value'
-          : 'label';
-      } else if (typeof item.key !== 'undefined') {
-        vProp = 'key';
-        lProp = (typeof item.value !== 'undefined')
-          ? 'value'
-          : 'key';
-      } else if (typeof item.Value !== 'undefined') {
-        vProp = 'Value';
-        lProp = (typeof item.Key !== 'undefined')
-          ? 'Key'
-          : 'Value';
-      } else if (typeof item.Key !== 'undefined') {
-        lProp = 'Key';
-        vProp = (typeof item.Key !== 'undefined')
-          ? 'Key'
-          : 'Value';
-      }
+/**
+ * Add an ID string for each item in the array.
+ *
+ * @param {string} fieldID ID for the label for the whole radio group
+ *
+ * @returns {Function} A function that can be passed to Array.map()
+ */
+export const setOptionIDs = (fieldID) => (item, index) => ({
+  ...item,
+  id: typeof item.id === 'string'
+    ? item.id
+    : `${fieldID}--${index}`,
+});
 
-      if (vProp === '' || lProp === '') {
-        throw new Error(
-          'Could not determine either the `value` or `label` '
-          + `property of option: "${item.toString()}"`,
-        );
-      }
+/**
+ * Check whether a boolean attribute should be present
+ *
+ * @param {object}  item     Item to have the attribute
+ * @param {string}  key      Property key for the attribute
+ * @param {boolean} override Override for the whole list of items
+ *
+ * @returns {true|undefined} `TRUE` if the override is true or the
+ *                           item's property value is boolean and
+ *                           true. `FALSE` otherwise
+ */
+export const itemIsTrue = (item, key, override = false) => {
+  if (override === true) {
+    return true;
+  }
 
-      _val = item[vProp];
-      _label = item[lProp];
-    }
-
-    if (typeof _val !== 'string') {
-      _val = _val.toString();
-    }
-
-    if (typeof _label !== 'string') {
-      _label = _label.toString();
-    }
-
-    return { value: _val, label: _label, default: (defaultVal === _val) };
-  });
+  return (typeof item[key] === 'boolean' && item[key] === true)
+    ? true
+    : undefined;
 };
