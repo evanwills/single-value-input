@@ -27,8 +27,8 @@ $border-rad: 0.3rem;
     width: 100%;
 
     &:focus-within {
-      outline: 0.2rem dotted $tsf-bright-blue;
-      outline-offset: 0.2rem;
+      outline: 0.125rem solid $tsf-bright-blue;
+      outline-offset: 0.063rem;
     }
 
     &--invalid {
@@ -36,6 +36,14 @@ $border-rad: 0.3rem;
 
       > ul {
         margin-bottom: 0.5rem !important;
+      }
+    }
+
+    &--checkable {
+      border: none;
+
+      &:focus-within {
+        outline: none;
       }
     }
 
@@ -65,13 +73,54 @@ $border-rad: 0.3rem;
         }
       }
     }
+
+    &--number {
+      &::after {
+        content: '';
+        border-left: 0.05rem solid $tsf-field-borders;
+        width: 0.05rem;
+        position: absolute;
+        border-radius: 0;
+        top: 0;
+        right: 2.975rem;
+        bottom: 0;
+        transform: none;
+      }
+
+      &.single-val-input__input-wrap--invalid {
+        &::after {
+          border-color: $tsf-red;
+          // right: 5.1rem;
+        }
+
+        > .single-val-input__error-icon {
+          opacity: 0;
+        }
+      }
+    }
+
+    &--combobox {
+      .single-val-input__error-icon {
+        top: 1.45rem;
+      }
+
+      &.single-val-input__input-wrap--invalid {
+        .autocomplete-input {
+          padding-right: 4.5rem;
+        }
+
+        .single-val-input__error-icon {
+          right: 2.25rem;
+        }
+      }
+    }
   }
 
   &__label {
     box-sizing: border-box;
     display: block;
     font-weight: bold;
-    padding: 0.5rem 2rem 0.5rem 0;
+    padding: 0.5rem 0;
     position: relative;
     text-align: left;
     text-align: start;
@@ -88,11 +137,13 @@ $border-rad: 0.3rem;
         padding-top: 0;
       }
 
-      // &__error {
-      //   &-icon {
-      //     top: 37.5%;
-      //   }
-      // }
+      &__error {
+        &-icon {
+          &--checkable {
+            top: calc(50% - 0.25rem);
+          }
+        }
+      }
     }
   }
 
@@ -124,6 +175,10 @@ $border-rad: 0.3rem;
       padding-bottom: 0;
     }
 
+    &--checkable {
+      border-radius: $border-rad;
+    }
+
     &-icon {
       background: $tsf-red;
       border-radius: 50rem;
@@ -135,17 +190,21 @@ $border-rad: 0.3rem;
       padding: 0.275rem 0.25rem;
       position: absolute;
       // left: 0.5rem;
-      right: -0.2rem;
-      // top: 50%;
-      top: 1.85rem;
+      right: 0.25rem;
+      top: 1.75rem;
       transform: translate(-50%, -50%);
       transition: opacity ease-in-out 0.3s;
       width: 1.25rem;
       height: 1.25rem;
       text-align: center;
+      // z-index: 10;
 
       &--show {
         opacity: 1;
+      }
+
+      &--checkable {
+        top: calc(50%);
       }
     }
   }
@@ -206,6 +265,22 @@ $border-rad: 0.3rem;
       padding: 0;
     }
 
+    &[type=number] {
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        border: none;
+        bottom: 0;
+        background: transparent url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDMyIDMyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnPjxwYXRoIGQ9Im04Ljk5NjEgNy45OTYxIDctNi45OTYxIDcuMDAzOSA3eiIvPjxwYXRoIGQ9Im04Ljk5NjEgMjRoMTQuMDA0bC03LjAwMzkgNi45OTIyeiIvPjwvZz48L3N2Zz4=) no-repeat center center;
+        opacity: 1; // shows Spin Buttons per default (Chrome >= 39)
+        position: absolute;
+        right: 0.5rem;
+        top: 0;
+        transform: scale(0.8);
+        width: 2em;
+      }
+    }
+
     &--icon-pre {
       padding-left: 2rem;
     }
@@ -216,6 +291,11 @@ $border-rad: 0.3rem;
 
     &--invalid {
       padding-right: 2rem;
+
+      &[type=number] {
+        padding-right: 1rem;
+        // width: calc(100% - 3rem);
+      }
     }
   }
 

@@ -1,4 +1,19 @@
 /**
+ * Sets the disabled attribute on field
+ *
+ * @returns {true|undefined}
+ */
+export const disabledOption = (item, isDisabled) => {
+  if (isDisabled === true) {
+    return true;
+  }
+
+  return (typeof item.disabled === 'boolean' && item.disabled === true)
+    ? true
+    : undefined;
+};
+
+/**
  * Get the option list as an array (rather than an array nested
  * within an object)
  *
@@ -262,3 +277,13 @@ export const itemIsTrue = (item, key, override = false) => {
     ? true
     : undefined;
 };
+
+/**
+ * Remove any empty options from select field options
+ *
+ * (Used when no-non-empty is set to remove the empty option after
+ * a non-empty option has been selected)
+ *
+ * @param {Object[]} option list of options for select field
+ */
+export const removeEmptyFilter = (option) => (option.value.trim() !== '');

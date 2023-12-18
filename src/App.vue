@@ -1,142 +1,173 @@
 <template>
   <ul>
-    <SingleValueInput error-msg="Bad user input"
-                      field-id="text-field"
-                      help-txt="This is some useful info about 'First field'"
-                      label="Basic text field"
-                      required
-                      type="text" />
-    <SingleValueInput error-msg="Please enter a valid password"
-                      field-id="password-field"
-                      label="Password"
-                      no-toggle
-                      required
-                      type="password">
+    <!-- -->
+    <WholeInputField
+      error-msg="Bad user input"
+      field-id="text-field"
+      help-txt="This is some useful info about 'First field'"
+      label="Basic text field"
+      required
+      type="text" />
+    <WholeInputField
+      error-msg="Please enter a valid password"
+      field-id="password-field"
+      label="Password"
+      no-toggle
+      required
+      type="password">
       <template #help>
-        <p>You need to enter your current password to change it. If you're not sure what your password is, you can <a href="https://www.thesmithfamily.com.au/forgot-password">reset your password</a> via email.</p>
+        <p>
+          You need to enter your current password to change it.
+          If you're not sure what your password is, you can
+          <a href="https://www.thesmithfamily.com.au/forgot-password">
+            reset your password
+          </a>
+          via email.
+        </p>
       </template>
-    </SingleValueInput>
-    <SingleValueInput :custom-validation="validPasswd"
-                      error-msg="Please enter a valid password"
-                      field-id="password2-field"
-                      help-txt="Please enter a password with at least 8 characters and no more than 32 characters. Your password must include at least one number and or special character"
-                      required
-                      help-first
-                      label="Password"
-                      min-length="8"
-                      max-length="32"
-                      type="password" />
-    <SingleValueInput field-id="number-field"
-                      min-length="8"
-                      max-length="32"
-                      label="Number field"
-                      type="number"
-                      required
-                      error-msg="Must be a number between 10 and 40"
-                      help-txt="Pick a number, any number" />
-    <SingleValueInput field-id="date-field"
-                      label="Date (only) field label"
-                      min-val="1979-01-29T09:00:00+12:00"
-                      max-val="2028-11-16T15:10:00+11:00"
-                      type="date"
-                      required
-                      error-msg="Please enter today's date" />
-    <SingleValueInput field-id="bad-date-field"
-                      label="Bad Date (only) field label"
-                      type="date"
-                      required
-                      :attributes="badDateInpAttr" />
-    <SingleValueInput field-id="datetime-field"
-                      label="Date-time field label"
-                      min-val="1979-01-29T09:00:00+12:00"
-                      max-val="2028-11-16T15:10:00+11:00"
-                      type="datetime-local" />
-    <SingleValueInput field-id="time-field"
-                      label="Date-time field label"
-                      type="datetime-local" />
-    <SingleValueInput field-id="time-field"
-                      label="Time of day field"
-                      min-val="08:30:00"
-                      max-val="17:30:00"
-                      required
-                      type="time">
+    </WholeInputField>
+    <WholeInputField
+      :custom-validation="validPasswd"
+      error-msg="Please enter a valid password"
+      field-id="password2-field"
+      help-txt="Please enter a password with at least 8 characters and no more than 32 characters. Your password must include at least one number and or special character"
+      help-first
+      label="Password"
+      min-length="8"
+      max-length="32"
+      required
+      type="password" />
+    <WholeInputField
+      error-msg="Must be a number between 10 and 40"
+      field-id="number-field"
+      help-txt="Pick a number, any number"
+      min-length="8"
+      max-length="32"
+      label="Number field"
+      required
+      type="number" />
+    <WholeInputField
+      field-id="date-field"
+      label="Date (only) field label"
+      min-val="1979-01-29T09:00:00+12:00"
+      max-val="2028-11-16T15:10:00+11:00"
+      type="date"
+      required
+      error-msg="Please enter today's date" />
+    <WholeInputField
+      field-id="bad-date-field"
+      label="Bad Date (only) field label"
+      required
+      type="date" />
+    <WholeInputField
+      field-id="datetime-field"
+      label="Date-time field label"
+      min-val="1979-01-29T09:00:00+12:00"
+      max-val="2028-11-16T15:10:00+11:00"
+      type="datetime-local" />
+    <WholeInputField
+      field-id="time-field"
+      label="Date-time field label"
+      type="datetime-local" />
+    <WholeInputField
+      field-id="time-field"
+      label="Time of day field"
+      min-val="08:30:00"
+      max-val="17:30:00"
+      required
+      type="time">
       <template #error>
-        <p>This some funcky error message with a <a href="https://vuejs.org/guide/components/slots.html">link</a></p>
+        <p>
+          This some funcky error message with a
+          <a href="https://vuejs.org/guide/components/slots.html">link</a>
+        </p>
       </template>
       <template #help>
-        <p>Our office hours are between 8:30am and 5:30pm <a href="https://vuejs.org/guide/components/slots.html">link</a></p>
+        <p>
+          Our office hours are between 8:30am and 5:30pm
+          <a href="https://vuejs.org/guide/components/slots.html">link</a>
+        </p>
       </template>
-    </SingleValueInput>
-    <SingleValueInput field-id="range-field"
-                      label="Range field label"
-                      type="range" />
-    <SingleValueInput field-id="colour-field"
-                      label="Choose a colour"
-                      type="color" />
-    <SingleValueInput field-id="textarea-field"
-                      label="Textarea field label"
-                      type="textarea"
-                      :attributes="textareaAttr"
-                      required
-                      error-msg="Please tell us somethings" />
-    <SingleValueInput field-id="radio-field"
-                      label="Radio list group label"
-                      error-msg="Please choose an option"
-                      type="radio"
-                      required
-                      :options="multiOptions" />
-    <SingleValueInput error-msg="Please choose an option"
-                      field-id="radio-field-default"
-                      label="Radio list group label"
-                      :options="multiOptions"
-                      required
-                      type="radio"
-                      value="2" />
-    <SingleValueInput empty-txt="-- please choose --"
-                      error-msg="Please choose an option"
-                      help-txt="This help text goes first"
-                      field-id="select-field"
-                      help-first
-                      label="Select field label"
-                      :options="multiOptions"
-                      required
-                      type="select">
-    </SingleValueInput>
-    <SingleValueInput error-msg="Please choose an option"
-                      field-id="conbo-field-default"
-                      label="What's your favourite option"
-                      :options="multiOptions"
-                      required
-                      type="combobox"
-                      value="3">
+    </WholeInputField>
+    <WholeInputField
+      field-id="range-field"
+      label="Range field label"
+      type="range" />
+    <WholeInputField
+      field-id="colour-field"
+      label="Choose a colour"
+      type="color" />
+    <WholeInputField
+      error-msg="Please tell us somethings"
+      field-id="textarea-field"
+      label="Textarea field label"
+      required
+      type="textarea" />
+    <WholeInputField
+      field-id="radio-field"
+      label="Radio list group label"
+      error-msg="Please choose an option"
+      type="radio"
+      required
+      :options="multiOptions" />
+    <WholeInputField
+      error-msg="Please choose an option"
+      field-id="radio-field-default"
+      label="Radio list group label"
+      :options="multiOptions"
+      required
+      type="radio"
+      value="2" />
+    <WholeInputField
+      empty-txt="-- please choose --"
+      error-msg="Please choose an option"
+      help-txt="This help text goes first"
+      field-id="select-field"
+      help-first
+      label="Select field label"
+      :options="multiOptions"
+      required
+      type="select" />
+    <!-- -->
+    <WholeInputField
+      :combo-label-getter="getPickleLabel"
+      error-msg="Please choose an option"
+      field-id="conbo-field-default"
+      label="What's your favourite option"
+      :options-getter="getPickle"
+      required
+      type="combobox"
+      value="Evan">
       <template #help>
         <p>We need to know your favourite option so we can try and give it to you.</p>
       </template>
-    </SingleValueInput>
-    <SingleValueInput field-id="mobile-field"
-                      label="Mobile phone"
-                      required
-                      validation-type="mobilephone"
-                      type="tel">
-    </SingleValueInput>
-    <SingleValueInput field-id="money-field"
-                      label="Money"
-                      required
-                      validation-type="money"
-                      step="0.01"
-                      type="number">
-    </SingleValueInput>
-    <SingleValueInput field-id="percent-field"
-                      label="Percent"
-                      required
-                      suffix-icon="%"
-                      type="number">
-    </SingleValueInput>
+    </WholeInputField>
+    <!-- -->
+    <WholeInputField
+      field-id="mobile-field"
+      label="Mobile phone"
+      required
+      validation-type="mobilephone"
+      type="tel" />
+    <WholeInputField
+      field-id="money-field"
+      label="Money"
+      required
+      validation-type="money"
+      step="0.01"
+      type="number" />
+    <WholeInputField
+      field-id="percent-field"
+      label="Percent"
+      required
+      suffix-icon="%"
+      type="number" />
+    <!-- -->
   </ul>
 </template>
 
 <script setup>
-import SingleValueInput from './components/SingleValueInput.vue';
+import WholeInputField from './components/shared-components/WholeInputField/WholeInputField.vue';
 import './assets/scss/main.scss';
 
 const multiOptions = [
@@ -180,6 +211,62 @@ const validPasswd = (input) => {
   }
 
   return 'Your password must include at least 2 non alphabetical characters';
+}
+
+const getPickleLabel = (data) => data.label;
+
+/**
+ *
+ *
+ * @param {function} search Async API address search function
+ *
+ * @returns {array} List of matched addresses.
+ */
+const getPickle = (input) => {
+  return [
+    {
+      id: 'evan',
+      label: 'Evan',
+    },
+    {
+      label: 'Ivan',
+      id: 'ivan',
+    },
+    {
+      label: 'Tarrin',
+      id: 'tarrin',
+    },
+    {
+      label: 'Toria',
+      id: 'victoria',
+    },
+    {
+      label: 'Mallee',
+      id: 'mallee',
+    },
+    {
+      label: 'Ada',
+      id: 'ada',
+    },
+    {
+      label: 'Emile',
+      id: 'emile',
+    },
+    {
+      label: 'Owen',
+      id: 'owen',
+    },
+    {
+      id: 'unknown',
+      label: 'Unable to find address?',
+    }
+  ];
+};
+
+const pickleValidation = (input) => {
+  return (input.length < 5)
+    ? 'Please enter at least 5 characters'
+    : '';
 }
 </script>
 

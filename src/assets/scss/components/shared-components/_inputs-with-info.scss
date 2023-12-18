@@ -1,5 +1,5 @@
 
-@import '../../config';
+@import '../../config.scss';
 
 $input-w-info-btn-txt-size: 0.875rem;
 $border-rad: 0.3rem;
@@ -8,11 +8,11 @@ $border-rad: 0.3rem;
   column-gap: 1.5rem;
   display: flex;
   flex-direction: column;
-  grid-template-areas:
-    "head  head"
-    "info inputs";
-  grid-template-columns: 50% 50%;
-  grid-template-columns: var(--info-fr) var(--input-fr);
+  // grid-template-areas:
+  //   "head  head"
+  //   "info inputs";
+  // grid-template-columns: 50% 50%;
+  // grid-template-columns: var(--info-fr) var(--input-fr);
   margin-bottom: 2rem;
   /* margin-top: 2rem; */
   row-gap: 1rem;
@@ -24,12 +24,12 @@ $border-rad: 0.3rem;
 
   > header {
     grid-area: head;
-    /* margin: 2rem 0 3rem; */
     margin: 0 0 1rem;
+    padding: 0 2rem;
     position: relative;
     text-align: center;
 
-    @media screen and (min-width: 48rem) {
+    @media screen and (min-width: $screen-lg-min) {
       margin-bottom: 2rem;
     }
 
@@ -62,13 +62,37 @@ $border-rad: 0.3rem;
   &__child {
     border: 0.05rem solid $tsf-field-borders;
     border-radius: 0.31rem;
-    padding: 3rem 1.5rem;
+    padding: 2rem 1rem;
     position: relative;
     display: flex;
     flex-direction: column;
 
-    > :first-child {
-      margin-top: 0;
+    // Make personal info card as small as possible
+    &#personal--info {
+      @media screen and (min-width: $screen-lg-min) {
+        align-self: flex-start;
+      }
+    }
+
+    &-inner {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+
+      @media screen and (min-width: $screen-lg-min) {
+        max-width: 27.5rem;
+      }
+
+      > :first-child {
+        margin-top: 0;
+      }
+    }
+
+    &--full-width {
+      .inputs-w-info__child-inner {
+        max-width: 50rem;
+        margin: 0 auto;
+      }
     }
 
     .semantic-head {
@@ -77,68 +101,27 @@ $border-rad: 0.3rem;
       font-size: 1.25rem;
       font-weight: normal;
 
-      @media screen and (min-width: 48rem) {
+      @media screen and (min-width: $screen-lg-min) {
         font-size: 1.625rem;
       }
     }
-  }
 
-  &__info {
-    display: flex;
-    flex-direction: column;
-    grid-area: info;
+    @media screen and (min-width: $screen-lg-min) {
+      padding: 3rem;
+    }
 
-    &__content {
-      flex-grow: 1;
-      height: 100%;
-      line-height: 1.5rem;
+    .child-id-card {
+      border: none;
+      // margin-bottom: 0;
+      margin-bottom: -1.5rem;
+      margin-top: -0.5rem;
+      // padding: 1.5rem 0 3rem;
+      padding: 0;
       text-align: center;
+      width: auto;
 
-      &__link {
-        text-align: center;
-        margin: 1rem 0 0;
-      }
-    }
-
-    &__h {
-      font-size: 1.25rem;
-      // font-weight: bold;
-      font-weight: normal;
-      justify-content: center;
-      letter-spacing: -0.02375rem;
-
-      &.semantic-head {
-        column-gap: 0;
-      }
-
-      span {
-        font-size: 2rem;
-        padding-right: 0;
-        padding-top: 0;
-        width: 3rem;
-      }
-    }
-
-    &--grey {
-      background-color: $grey;
-    }
-
-    .status-indicator {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .button {
-      text-transform: uppercase;
-      display: inline-block;
-      font-weight: bold;
-      text-decoration: none;
-
-      :hover, :focus {
-        background-color: $tsf-bright-blue;
-        color: $white;
+      @media screen and (min-width: $screen-lg-min) {
+        margin-top: -1.5rem;
       }
     }
   }
@@ -147,7 +130,7 @@ $border-rad: 0.3rem;
     grid-area: inputs;
     margin-top: 2.5rem;
 
-    @media screen and (min-width: 48rem) {
+    @media screen and (min-width: $screen-lg-min) {
       margin-top: 0;
     }
 
@@ -159,7 +142,7 @@ $border-rad: 0.3rem;
         text-align: center;
         font-size: 1.5rem;
 
-        @media screen and (min-width: 48rem) {
+        @media screen and (min-width: $screen-lg-min) {
           text-align: right;
           font-size: 2rem;
         }
@@ -190,8 +173,7 @@ $border-rad: 0.3rem;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    margin: 2rem 0.6rem 0 3rem;
-    // margin: 2rem 0 0;
+    margin: 2rem 0 0;
     // transition-delay: 0.1s;
     transition-duration: var(--transition-duration);
     transition-property: gap;
@@ -201,8 +183,9 @@ $border-rad: 0.3rem;
       transition: none;
     }
 
-    @media screen and (min-width: 48rem) {
+    @media screen and (min-width: $screen-lg-min) {
       flex-direction: row;
+      margin-left: 2.5rem;
     }
 
     &--viewing {
@@ -224,7 +207,6 @@ $border-rad: 0.3rem;
     flex-grow: 1;
     font-weight: bold;
     padding: 1rem;
-    max-width: 16.5rem;
     min-width: 10rem;
     text-align: center;
     text-transform: uppercase;
@@ -232,10 +214,13 @@ $border-rad: 0.3rem;
     transition-timing-function: ease-in-out;
     white-space: nowrap;
     // width: 100%;
-    width: calc(50% - 0.5rem);
 
     @media (prefers-reduced-motion) {
       transition: none;
+    }
+
+    @media screen and (min-width: $screen-lg-min) {
+      max-width: 16.5rem;
     }
 
     &:disabled {
@@ -298,7 +283,7 @@ $border-rad: 0.3rem;
       // font-weight: bold;
     }
 
-    &--close {
+    &--cancel {
       background-color: $white;
       border-color: $tsf-bright-blue;
       color: $tsf-bright-blue;
@@ -313,13 +298,39 @@ $border-rad: 0.3rem;
       background-color: $old-utility-green;
       border-color: $old-utility-green;
     }
+
+    &--close-modal {
+      border: none;
+      background-color: transparent;
+      position: absolute;
+      display: block;
+      top: 0;
+      right: 0;
+      color: $dark-grey;
+      width: 3.5rem;
+      height: 3.5rem;
+      min-width: 3.5rem;
+
+      &:focus {
+        border-bottom-left-radius: 0.3rem;
+        border-bottom-right-radius: 0;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0.3rem;
+        outline: 0.1rem solid $tsf-bright-blue;
+        outline-offset: 0.1rem;
+      }
+    }
   }
 
   &__content {
     align-self: stretch;
-    flex-grow: 1;
+    // flex-grow: 1;
+    // --------------------------------------------------------------
+    // This is to account for the space needed for focus outline
+    margin: 0 -0.1rem 0 -0.2rem;
+    padding: 0 0.2rem;
+    // --------------------------------------------------------------
     // margin-left: 3rem;
-    margin-left: 2.6rem;
     // height: var(--current-height, auto);
     overflow: hidden;
     position: relative;
@@ -329,15 +340,18 @@ $border-rad: 0.3rem;
       transition: none;
     }
 
+    @media screen and (min-width: $screen-lg-min) {
+      margin-left: 2.1rem;
+    }
+
     > .inputs-block {
-      column-gap:  1.4rem;
+      column-gap:  1rem;
       display: flex;
       align-items: flex-start;
       height: var(--current-height, auto);
       // margin-bottom: calc(var(--edit-height) * -1);
       // overflow: hidden;
       // left: -50%;
-      padding: 0 0.2rem;
       padding: 0;
       // position: relative;
 
@@ -348,7 +362,7 @@ $border-rad: 0.3rem;
       // transition-property: order;
       // transform: translateY(calc(var(--view-height) * -1));
       // width: 100%;
-      width: calc(200% + 1.2rem);
+      width: calc(200% + 0.7rem);
 
       @media (prefers-reduced-motion) {
         transition: none;
@@ -362,7 +376,7 @@ $border-rad: 0.3rem;
           // position: absolute;
           // transition: transform ease-in-out var(--transition-duration);
           width: calc(50% - 0.4rem);
-          padding: 0 0.5rem 0.5rem 0.2rem;
+          // padding: 0 0.5rem 0.5rem 0.2rem;
 
           ul {
             margin: 0;
@@ -371,11 +385,25 @@ $border-rad: 0.3rem;
             &.radio-group {
               padding-bottom: 0;
             }
+
+            &.bullet {
+              margin: 1rem 0 0;
+
+              > li {
+                list-style: disc;
+                margin-left: 1.25rem;
+              }
+            }
           }
 
           &--values {
-            top: 0;
+            // top: 0;
             order: 2;
+            padding-left: 1.76rem;
+
+            @media screen and (min-width: $screen-lg-min) {
+              padding-left: 0.2rem
+            }
           }
 
           &--inputs {
@@ -416,9 +444,13 @@ $border-rad: 0.3rem;
   &__dialogue {
     border: 0.05rem solid $tsf-bright-blue;
     border-radius: $border-rad;
-    padding: 2rem;
+    padding: 2rem 0.75rem;
     width: calc(100% - 4rem);
     max-width: 29.5rem;
+
+    @media screen and (min-width: $screen-lg-min) {
+      padding: 2rem;
+    }
 
     &::backdrop {
       background-color: $black--80;
@@ -429,9 +461,13 @@ $border-rad: 0.3rem;
     }
 
     &__btns {
-      margin-top: 2rem;
+      margin-top: 1rem;
       text-align: center;
       margin-left: 0 !important;
+
+      @media screen and (min-width: $screen-lg-min) {
+        margin-top: 2rem;
+      }
 
       button {
         display: inline-block;
@@ -439,9 +475,14 @@ $border-rad: 0.3rem;
     }
 
     .semantic-head {
-      font-size: 1.625rem;
+      font-size: 1.25rem;
       margin-bottom: 0.5rem;
       text-align: center;
+
+      @media screen and (min-width: $screen-lg-min) {
+        font-size: 1.625rem;
+        margin-bottom: 1.25rem;
+      }
     }
 
     &--failed {
@@ -458,14 +499,14 @@ $border-rad: 0.3rem;
   &--old {
     .inputs-w-info {
       &__btns {
-        align-items: flex-start;
-        justify-content: flex-start;
+        // align-items: flex-start;
+        justify-content: center;
         column-gap: 1rem;
-        margin: 2rem 0.4rem 0 3rem;
         row-gap: 0.5rem;
 
-        @media screen and (min-width: 48rem) {
+        @media screen and (min-width: $screen-lg-min) {
           // flex-direction: column;
+          justify-content: flex-start;
 
           &--delete {
             flex-direction: row;
@@ -518,45 +559,7 @@ $border-rad: 0.3rem;
   //   flex-direction: column;
   // }
 
-  &--swap,
-  &--alternate > .inputs-w-info:nth-of-type(even),
-  &--alternate > .inputs-w-info.inputs-w-info--swap:nth-of-type(odd),
-  &--alternate--rev > .inputs-w-info:nth-of-type(odd),
-  &--alternate--rev > .inputs-w-info.inputs-w-info--swap:nth-of-type(even) {
-    .inputs-w-info {
-      &__info {
-        order: 3;
-      }
-      &__inputs {
-        order: 2;
-      }
-    }
-  }
-
-  &--left.inputs-w-info {
-    .inputs-w-info {
-      &__info {
-        order: 3 !important;
-      }
-      &__inputs {
-        order: 2 !important;
-        margin-top: 0 !important;
-      }
-    }
-  }
-
-  &--right.inputs-w-info {
-    .inputs-w-info {
-      &__info {
-        order: 2 !important;
-      }
-      &__inputs {
-        order: 3 !important;
-      }
-    }
-  }
-
-  @media screen and (min-width: 48rem) {
+  @media screen and (min-width: $screen-lg-min) {
     align-items: stretch;
     flex-direction: row;
     flex-wrap: wrap;
@@ -601,8 +604,42 @@ $border-rad: 0.3rem;
       }
     }
 
-    &--old {
-      align-items: flex-start;
+    &--swap,
+    &--alternate > .inputs-w-info:nth-of-type(even),
+    &--alternate > .inputs-w-info.inputs-w-info--swap:nth-of-type(odd),
+    &--alternate--rev > .inputs-w-info:nth-of-type(odd),
+    &--alternate--rev > .inputs-w-info.inputs-w-info--swap:nth-of-type(even) {
+      .inputs-w-info {
+        &__info {
+          order: 3;
+        }
+        &__inputs {
+          order: 2;
+        }
+      }
+    }
+
+    &--left.inputs-w-info {
+      .inputs-w-info {
+        &__info {
+          order: 3 !important;
+        }
+        &__inputs {
+          order: 2 !important;
+          margin-top: 0 !important;
+        }
+      }
+    }
+
+    &--right.inputs-w-info {
+      .inputs-w-info {
+        &__info {
+          order: 2 !important;
+        }
+        &__inputs {
+          order: 3 !important;
+        }
+      }
     }
   }
 
@@ -624,6 +661,7 @@ $border-rad: 0.3rem;
                             "inputs info";
       }
     } */
+
   .inputs-block {
     &__values {
       ul {
@@ -636,10 +674,18 @@ $border-rad: 0.3rem;
       li {
         margin: 0;
       }
+
       li + li {
         margin-top: 2rem;
       }
+
+      .typeahead-results {
+        li + li {
+          margin-top: 0rem;
+        }
+      }
     }
+
     &__label {
       font-weight:  bold;
       display: block;

@@ -37,7 +37,7 @@
     bottom: 0;
     right: 3rem;
     height: 100%;
-    border-left: 0.05rem solid $regular-grey;
+    border-left: 0.05rem solid $tsf-field-borders;
   }
 
   &::after {
@@ -62,6 +62,19 @@
       transform: translateY(-50%) rotate(180deg);
       transition: transform ease-in-out 0.3s;
     }
+  }
+
+  &--error {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+
+    &::before {
+      border-color: $tsf-red;
+    }
+  }
+
+  &--required {
+    border-color: $tsf-red;
   }
 
   > select {

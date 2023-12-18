@@ -4,31 +4,21 @@
  */
 
 /**
- * Convert and address object to a human readable (single line)
- * address
+ * Convert empty strings (and non-strings) to NULL otherwise return
+ * the string with any leading or trailing white space removed
  *
- * @param {object} input Address object
- * @param {string} sep   Seperator character(s) to place between
- *                       fragments of the address
+ * @param {string|null} input Value to be checked
  *
- * @returns {string} Human readable address string.
+ * @returns {string|null}
  */
-export const addressToHuman = (input, sep = ' ') => {
-  const keys = Object.keys(input);
-  let output = '';
-  let _sep = '';
+export const empty2null = (input) => {
+  const output = (typeof input === 'string')
+    ? input.trim()
+    : null;
 
-  for (let a = 0; a < keys.length; a += 1) {
-    if (input[keys[a]] !== null && typeof input[keys[a]] === 'string') {
-      const tmp = input[keys[a]].trim();
-      if (tmp !== '') {
-        output += _sep + tmp;
-        _sep = sep;
-      }
-    }
-  }
-
-  return output;
+  return output !== ''
+    ? output
+    : null;
 };
 
 /**
@@ -38,7 +28,66 @@ export const addressToHuman = (input, sep = ' ') => {
  *
  * @returns {boolean} TRUE if input is undefined, NULL or empty string
  */
-export const emptyOrNull = (input) => (input === null || input.trim() === '');
+export const emptyOrNull = (input) => {
+  const t = typeof input;
+
+  return (t === 'undefined' || input === null || input === 0
+    || (t === 'string' && input.trim() === ''));
+};
+
+export const formatDate = (isoDate) => {
+  const tmp = (typeof isoDate === 'string')
+    ? new Date(isoDate)
+    : isoDate;
+
+  if ((tmp instanceof Date) === false) {
+    throw new Error('formatDate() could not convert input into Date object');
+  }
+
+  return tmp.toLocaleDateString(
+    'en-AU',
+    { day: 'numeric', month: 'short', year: 'numeric' },
+  )
+}
+
+/**
+ * Make an Australian phone number human readable
+ *
+ * e.g. mobile number: "0412345678" would be returned
+ *      as: "0412 345 678"
+ * e.g. fixed line number: "0298765432" would be returned
+ *      as "02 9876 5432"
+ *
+ * @param {string} phone Phone number to be formatted
+ *
+ * @returns {string} Human readable Sustralian phone number
+ */
+export const formatPhone = (phone) => {
+  const tmp = phone.replace(/[^0-9]+/, '');
+  const pre = tmp.substring(0, 2);
+
+  const regex = (pre === '04' || pre === '05')
+    ? /(0[45][0-9]{2})([0-9]{3})([0-9]{3})/
+    : /(0[1-36-9])([0-9]{4})([0-9]{4})/;
+
+  return tmp.replace(regex, '$1 $2 $3');
+};
+
+/**
+ * Get a function that returns the start of an error message
+ * (or console group name) string for a given method
+ *
+ * @param {string} method Name of method that might throw an error
+ *
+ * @returns {string}
+ */
+export const getEpre = (componentName, componentID = '') => {
+  const tail = (componentID !== '')
+    ? ` (#${componentID})`
+    : '';
+
+  return (method) => `${componentName}.${method}()${tail} `;
+};
 
 /**
  * Get an ISO 8601 date string offset by a given amount.
@@ -109,9 +158,9 @@ export const getRelativeIsoDate = (offset, unit = 'year', now = null) => {
  * @returns {boolean} TRUE if slot or attribute has content.
  *                    FALSE otherwise
  */
-export const hasContent = (component, attr, slot) => (
+export const hasContent = (component, attr, slot = '') => (
   (attr !== '' && typeof component[attr] === 'string' && component[attr].trim() !== '')
-  || (slot !== '' && typeof component.$slots[slot] === 'string' && component.$slots[slot].trim() !== '')
+  || (slot !== '' && typeof component.$slots[slot] !== 'undefined' && component.$slots[slot].length > 0)
 );
 
 /**
@@ -123,6 +172,16 @@ export const hasContent = (component, attr, slot) => (
  *                    FALSE otherwise.
  */
 export const isBoolTrue = (input) => (typeof input === 'boolean' && input === true);
+
+/**
+ * Check whether the input is a plain JavaScript object.
+ *
+ * @param {unknown} input A value that may be an object
+ *
+ * @returns {boolean} TRUE if the input ins an object (and not nul
+ *                    and not an array). FALSE otherwise
+ */
+export const isObj = (input) => (Object.prototype.toString.call(input) === '[object Object]');
 
 /**
  * Check whether a value is NULL, string, number or boolean
@@ -181,13 +240,18 @@ export const ucFirst = (input) => input.trim().replace(/([^a-z]*)([a-z])/i, ucFi
  * @returns {string} modified version of input string
  */
 export const stringToOther = (input, splitter = ' ', joiner = '') => {
-  let _split = splitter;
+  let tmp = [];
 
   if (splitter === '') {
-    _split = /(?<=[^A-Z])(?=[A-Z])/g;
+    // We are using match for splitting camel case because before
+    // 2023-03-27 iOS Safari does not support lookbehind syntax and
+    // throws an error
+    tmp = input.match(/([A-Z]?[^A-Z]+)(?=[A-Z]|$)/g);
+  } else {
+    tmp = input.split(splitter);
   }
 
-  const tmp = input.split(_split).map((item) => item.trim().toLowerCase());
+  tmp = tmp.map((item) => item.trim().toLowerCase());
 
   if (joiner === '') {
     for (let b = 1; b < tmp.length; b += 1) {
@@ -253,14 +317,14 @@ export const humanTo = (input, output = 'camel') => {
  * @throws {Error} If a property from obj1 is missing in obj2
  */
 export const objectsAreSame = (obj1, obj2) => {
-  if (typeof obj1 !== 'object') {
+  if (isObj(obj1) === false) {
     throw new Error(
       'deepCompare() expects first property `obj1` to be an '
       + `object. "${typeof obj1}" given.`,
     );
   }
 
-  if (typeof obj1 !== 'object') {
+  if (isObj(obj2) === false) {
     throw new Error(
       'deepCompare() expects first property `obj2` to be an '
       + `object. "${typeof obj2}" given.`,
@@ -277,16 +341,37 @@ export const objectsAreSame = (obj1, obj2) => {
       );
     }
 
-    if (obj1[keys1[a]] !== obj2[keys1[a]]) {
-      return false;
-    }
-
-    if (typeof obj1[keys1[a]] === 'object') {
-      if (!objectsAreSame(obj1[keys1[a]], obj2[keys1[a]])) {
+    if (isObj(obj1[keys1[a]]) || isObj(obj2[keys1[a]])) {
+      if (obj1[keys1[a]] === null || obj2[keys1[a]] === null
+        || !objectsAreSame(obj1[keys1[a]], obj2[keys1[a]])
+      ) {
         return false;
       }
+    } else if (obj1[keys1[a]] !== obj2[keys1[a]]) {
+      return false;
     }
   }
 
   return true;
 };
+
+/**
+ * Add HTML zero width space character entity to email address to
+ * make it wrap after the `@` symbol
+ *
+ * > __Note:__ If you do this, the string must be rendered from
+ * >           within a v-html attribute, which allows any HTML.
+ *
+ * > __Note also:__ For security reasons this function also filters
+ * >           out almost all non-alphanumeric characters
+ *
+ * > __Final note:__ The email address output by this function may be
+ * >           invalid when copied and pasted into an email "To",
+ * >           "CC" or "BCC" field
+ *
+ * @param {string} email Email address to make wrappable
+ *
+ * @returns {string} email address that will wrap when line gets
+ *                   too long.
+ */
+export const wrappableEmail = (email) => email.replace(/[^@a-z0-9.-_']+/, '').replace('@', '@&ZeroWidthSpace;');

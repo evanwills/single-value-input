@@ -118,38 +118,4 @@ $font-mt-bold: $tsf-font; // was 'NewsGothicMTStd-Bold'
 $font-mt: $tsf-font; // was 'NewsGothicMTStd'
 $font-brand: $tsf-font; // was Arial
 
-// @font-face {
-//   font-family: "NewsGothicMTStd";
-//   src: url("/assets/font/38C563_0_0.eot");
-//   src: url("/assets/font/38C563_0_0.eot?#iefix") format("embedded-opentype"),
-//     url("/assets/font/38C563_0_0.woff2") format("woff2"),
-//     url("/assets/font/38C563_0_0.woff") format("woff"),
-//     url("/assets/font/38C563_0_0.ttf") format("truetype"),
-//     url("/assets/font/38C563_0_0.svg#svgFontName") format("svg");
-// }
-
-// @font-face {
-//   font-family: "NewsGothicMTStd-Bold";
-//   src: url("/assets/font/38C563_1_0.eot");
-//   src: url("/assets/font/38C563_1_0.eot?#iefix") format("embedded-opentype"),
-//     url("/assets/font/38C563_1_0.woff2") format("woff2"),
-//     url("/assets/font/38C563_1_0.woff") format("woff"),
-//     url("/assets/font/38C563_1_0.ttf") format("truetype"),
-//     url("/assets/font/38C563_1_0.svg#svgFontName") format("svg");
-// }
-
-// @font-face {
-//   font-family: "NewsGothicBT-Roman";
-//   src: url("/assets/font/279415_0_0.eot");
-//   src: url("/assets/font/279415_0_0.eot?#iefix") format("embedded-opentype"),
-//     url("/assets/font/279415_0_0.woff") format("woff"),
-//     url("/assets/font/279415_0_0.ttf") format("truetype");
-// }
-
-// @font-face {
-//   font-family: "NewsGothicBT-Bold";
-//   src: url("/assets/font/279415_2_0.eot");
-//   src: url("/assets/font/279415_2_0.eot?#iefix") format("embedded-opentype"),
-//     url("/assets/font/279415_2_0.woff") format("woff"),
-//     url("/assets/font/279415_2_0.ttf") format("truetype");
-// }
+$screen-lg-min: 48rem;
