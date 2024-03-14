@@ -47,6 +47,15 @@
       required
       type="number" />
     <WholeInputField
+      error-msg="Must be a number between 10 and 40"
+      field-id="number-field"
+      help-txt="Pick a number, any number"
+      min-length="8"
+      max-length="32"
+      label="Number field"
+      required
+      type="numeric" />
+    <WholeInputField
       field-id="date-field"
       label="Date (only) field label"
       min-val="1979-01-29T09:00:00+12:00"
@@ -128,6 +137,16 @@
       :options="multiOptions"
       required
       type="select" />
+    <WholeInputField
+      empty-txt="-- please choose --"
+      error-msg="Please choose an option"
+      help-txt="This help text goes first"
+      field-id="select-field"
+      help-first
+      label="(Pretty) select field label"
+      :options="multiOptions"
+      required
+      type="prettyselect" />
     <!-- -->
     <WholeInputField
       :combo-label-getter="getPickleLabel"
@@ -161,6 +180,24 @@
       label="Percent"
       required
       suffix-icon="%"
+      type="number" />
+    <WholeInputField
+      external-invalid
+      field-id="likert-questions"
+      label="Please rate how you feel about the following things"
+      required
+      :options="likertOptions"
+      :questions="likertQuestions"
+      type="likert"
+      error-msg="Please rate each option" />
+
+    <WholeInputField
+      field-id="simple-number"
+      label="Simple number"
+      required
+      min-val="-2"
+      max-val="7"
+      step="0.75"
       type="number" />
     <!-- -->
   </ul>
@@ -262,6 +299,24 @@ const getPickle = (input) => {
     }
   ];
 };
+
+const likertOptions = [
+  { value: '0', label: 'N/A' },
+  { value: '1', label: 'Very bad' },
+  { value: '2', label: 'Bad' },
+  { value: '3', label: 'Acceptable' },
+  { value: '4', label: 'Good' },
+  { value: '5', label: 'Very good' },
+];
+
+const likertQuestions = [
+  { id: 'q1', label: 'Apples' },
+  { id: 'q2', label: 'Cars' },
+  { id: 'q3', label: 'Bicycles' },
+  { id: 'q4', label: 'Trains' },
+  { id: 'q5', label: 'Conservative polititions' },
+  { id: 'q6', label: 'Fast food chains' },
+];
 
 const pickleValidation = (input) => {
   return (input.length < 5)

@@ -5,37 +5,6 @@
  */
 
 /**
- * Safely open a possibly already open dialogue model
- *
- * __Note:__ Older versions of chrome/Chromium have a bug where they
- *           throw an error if a modal is already open and you try
- *           and open it again.
- *
- * @param {HTMLDialogElement} modal
- */
-export const doShowModal = (modal) => {
-  if (modal !== null && modal.open !== true) {
-    modal.showModal();
-  }
-};
-
-/**
- * Safely close an open dialogue model
- *
- * __Note:__ Older versions of chrome/Chromium have a bug where they
- *           throw an error if a modal is already open and you try
- *           and open it again. It's possible that this bug would
- *           effect closing a modal too.
- *
- * @param {HTMLDialogElement} modal
- */
-export const doCloseModal = (modal) => {
-  if (modal !== null && modal.open === true) {
-    modal.close();
-  }
-};
-
-/**
  * Check whether a blur event should trigger a `lostfocus` event
  *
  * @param {InputEvent}      event     onBlur event object
@@ -91,8 +60,6 @@ export const focusLost = (
         || id.substring(start, len) !== fieldID);
 };
 
-export const getVuexDispatcher = (store, action) => async (data) => store.dispatch(action, data);
-
 /**
  * Check whether a property is a non-empty string
  *
@@ -145,47 +112,6 @@ export const hasContent = (slots, props, slotName, propName) => {
 };
 
 /**
- * Check the URL to see if there's an anchor. If there is, and there
- * is a DOM node with a matching ID, attempt to scroll the user to
- * that anchor point.
- *
- * @param {number} count    Number of times to attempt to find scroll
- *                          point.
- * @param {number} interval Milliseconds delay between attempts to
- *                          find scroll point
- *
- * @returns {void}
- */
-export const jumpToAnchor = (count = 100, interval = 100) => {
-  const anchor = (typeof window.location.hash === 'string' && window.location.hash.trim() !== '')
-    ? window.location.hash.replace('#', '')
-    : false;
-
-  if (anchor !== false) {
-    let times = count;
-
-    const int = setInterval(() => {
-      times -= 1;
-
-      if (times < 0) {
-        clearInterval(int);
-        return false;
-      }
-
-      const target = document.getElementById(anchor);
-      if (target !== null) {
-        target.scrollIntoView();
-        clearInterval(int);
-
-        return false;
-      }
-
-      return true;
-    }, interval);
-  }
-};
-
-/**
  * Handle everything to do with emitting a "lostfocus" event
  *
  * @param {InputEvent}            event     onBlur event object
@@ -235,30 +161,3 @@ export const multiFieldBlur = (
       : null,
   };
 };
-
-/**
- * Set all properties in an object to false
- *
- * @param {{[index:string]: boolean}} obj Source object
- *
- * @returns {{[index:string]: false}} new object with same keys as
- *                                    input but with all values set
- *                                    to `false`
- */
-export const setAllToFalse = (obj) => {
-  const keys = Object.keys(obj);
-  const output = {};
-
-  for (let a = 0; a < keys.length; a += 1) {
-    output[keys[a]] = false;
-  }
-
-  return output;
-};
-
-export const saveAttemptedDetected = (event) => (event !== null
-  && typeof event.relatedTarget !== 'undefined'
-  && event.relatedTarget !== null
-  && event.relatedTarget.tagName === 'BUTTON'
-  && event.relatedTarget.className.includes('save--disabled')
-);

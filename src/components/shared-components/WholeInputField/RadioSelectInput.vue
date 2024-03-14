@@ -17,8 +17,8 @@
         :tabindex="tabIndex"
         :type="type"
         :value="option.value"
-        v-on:change="radioChanged($event)"
-        v-on:blur="radioChanged($event)" />
+        v-on:blur="radioBlur($event)"
+        v-on:change="radioChanged($event)" />
       <label :for="option.id" :class="radioClass">{{ option.label }}</label>
     </li>
   </ul>
@@ -64,12 +64,13 @@ import {
   setOptionIDs,
 } from './radio-select.utils';
 import { getEpre } from '../../../utils/general-utils';
+import { multiFieldBlur } from '../../../utils/vue-utils';
 
 //  END:  component props
 // --------------------------------------------------------
 // START: define emitted events
 
-const emit = defineEmits(['blur', 'change', 'focus', 'invalid', 'keyup']);
+const emit = defineEmits(['blur', 'change', 'focus', 'invalid', 'keyup', 'lostfocus']);
 
 //  END:  define emitted events
 // --------------------------------------------------------
@@ -258,6 +259,18 @@ const localLastUpdated = ref(0);
 const renderType = ref('select');
 
 /**
+ * value to add to the checked/selected attribute of a
+ * <SELECT>/<INPUT type="checkbox" /> element;
+ *
+ * Options are:
+ * * "selected" (default)
+ * * "checked"
+ *
+ * @property {string} selectStr
+ */
+const selectStr = ref('selected');
+
+/**
  * List of options to be rendered
  *
  * Each option object has the following properties
@@ -289,185 +302,6 @@ const useEmpty = ref(false);
 const valueAttr = ref('selected');
 
 //  END:  local state
-// --------------------------------------------------------
-// START: local methods
-
-/**
- * Handle updating state and emitting events from both `blur`
- * and `change` events for both <SELECT> and <INPUT type=radio>
- * elements.
- *
- * 1. Set current value (if it's valid)
- * 2. Set invalid state
- * 3. Emit an invalid event
- * 4. 1. value has changed emit a "change" event
- *    2. If value has not "change" but event was "blur" reemit
- *       the "blur" event
- *
- * @param {Event} e `blur` or `change` Event emitted by either
- *                  <SELECT> and <INPUT type=radio> elements.
- * @param {string|boolean} newVal New (value after validation).
- *
- * @emits invalid with a boolean value.
- *                TRUE if new value is invalid.
- *                FALSE otherwise
- * @emits change  If new value is valid and different from
- *                previous value
- * @emits blur    If new value is the same as previous value
- *                and the triggering event was a `blur` Event.
- */
-const handleChangeShared = (e, newVal) => {
-  const oldVal = currentValue.value;
-
-  if (typeof newVal === 'string') {
-    currentValue.value = newVal;
-  }
-
-  invalid.value = ((props.isRequired === true && currentValue.value === '') || newVal === false);
-
-  emit('invalid', invalid.value);
-
-  if (oldVal !== currentValue.value) {
-    emit('change', e);
-  } else if (e.type === 'blur') {
-    emit('blur', e);
-  }
-};
-
-/**
- * determine if an option has been chosen
- *
- * @param {{key: string|number, value: string}} option single select/radio
- */
-const isSelected = (option) => {
-  const _valueAttr = (props.type === 'radio')
-    ? 'checked'
-    : 'selected';
-
-  return (option.value == props.value) // eslint-disable-line
-    ? _valueAttr
-    : undefined;
-};
-
-const getLabels = (option) => option.label;
-
-/**
- * Validate new value from last user interaction
- *
- * @returns {string|false} String if new value is valid,
- *                         FALSE otherwise.
- */
-const validateValue = (val) => {
-  for (let a = 0; a < usableOptions.value.length; a += 1) {
-    if (usableOptions.value[a].value === val) {
-      // make sure there's no funny business going on and that
-      // the selected value is valid
-      return val;
-    }
-  }
-
-  return false;
-};
-
-/**
- * Handle changes to radio or select input fields
- *
- * @param {Event} event
- */
-const radioChanged = (event) => {
-  const newVal = (event.target.checked === true)
-    ? validateValue(event.target.value)
-    : true;
-
-  handleChangeShared(event, newVal);
-};
-
-/**
- * Handle changes to <SELECT> fields
- *
- * @param {Event} event
- */
-const selectChanged = (event) => {
-  handleChangeShared(event, validateValue(event.target.value));
-
-  if (currentValue.value.trim() !== '' && props.noNonEmpty === true) {
-    usableOptions.value = usableOptions.value.filter(removeEmptyFilter);
-  }
-};
-
-/**
- * Make option list usable for <SELECT> and/or <INPUT type="radio" />
- *
- * Normalise key/value pairs
- */
-const setUsableOptions = () => {
-  // Make sure options are useable
-  let options = normaliseOptions(
-    props.options,
-    currentValue.value,
-    props.dedupe,
-  );
-
-  options = (useEmpty.value === true)
-    ? [{ value: '', label: props.emptyTxt }, ...options]
-    : options;
-
-  // Give each radio option a unique ID
-  usableOptions.value = (renderType.value === 'radio')
-    ? options.map(setOptionIDs(props.fieldId))
-    : options;
-
-  if (renderType.value === 'combo') {
-    // show all the options available until user starts typing
-    filteredOptions.value = usableOptions.value.map(getLabels);
-  }
-};
-
-/**
- * Set the current/default value
- * (i.e. the value that's come from the server)
- */
-const validateCurrentValue = () => {
-  // Make sure initial value is one of the allowed options
-  if (currentValue.value !== '') {
-    let ok = false;
-
-    for (let a = 0; a < usableOptions.value.length; a += 1) {
-      if (usableOptions.value[a].value === currentValue.value) {
-        // All good! We found a match
-        if (props.type === 'combobox') {
-          comboValue.value = usableOptions.value[a].label;
-        }
-        ok = true;
-        break;
-      }
-    }
-
-    if (ok === false) {
-      // Lets check whether the initial value matches a label
-      // string instead of the value
-      for (let a = 0; a < usableOptions.value.length; a += 1) {
-        if (usableOptions.value[a].label === currentValue.value) {
-          // All good! We found a match
-          currentValue.value = usableOptions.value[a].value;
-          if (props.type === 'combobox') {
-            comboValue.value = usableOptions.value[a].label;
-          }
-          ok = true;
-          break;
-        }
-      }
-    }
-
-    if (ok === false) {
-      // Could not find a valid match so make current value
-      // empty.
-      currentValue.value = '';
-    }
-  }
-};
-
-//  END:  local methods
 // --------------------------------------------------------
 // START: computed properties
 
@@ -572,6 +406,198 @@ const selectClass = computed(() => {
 
 //  END:  computed properties
 // --------------------------------------------------------
+// START: local methods
+
+const getLabels = (option) => option.label;
+
+/**
+ * Handle updating state and emitting events from both `blur`
+ * and `change` events for both <SELECT> and <INPUT type=radio>
+ * elements.
+ *
+ * 1. Set current value (if it's valid)
+ * 2. Set invalid state
+ * 3. Emit an invalid event
+ * 4. 1. value has changed emit a "change" event
+ *    2. If value has not "change" but event was "blur" reemit
+ *       the "blur" event
+ *
+ * @param {Event} e `blur` or `change` Event emitted by either
+ *                  <SELECT> and <INPUT type=radio> elements.
+ * @param {string|boolean} newVal New (value after validation).
+ *
+ * @emits invalid with a boolean value.
+ *                TRUE if new value is invalid.
+ *                FALSE otherwise
+ * @emits change  If new value is valid and different from
+ *                previous value
+ * @emits blur    If new value is the same as previous value
+ *                and the triggering event was a `blur` Event.
+ */
+const handleChangeShared = (e, newVal) => {
+  const oldVal = currentValue.value;
+
+  if (typeof newVal === 'string') {
+    currentValue.value = newVal;
+  }
+
+  invalid.value = (
+    (props.isRequired === true
+    && (typeof currentValue.value !== 'string' || currentValue.value === ''))
+    || newVal === false
+  );
+
+  emit('invalid', invalid.value);
+
+  if (oldVal !== currentValue.value) {
+    emit('change', e);
+  } else if (e.type === 'blur') {
+    emit('blur', e);
+  }
+};
+
+/**
+ * determine if an option has been chosen
+ *
+ * @param {{key: string|number, value: string}} option single select/radio
+ */
+const isSelected = (option) => { // eslint-disable-line arrow-body-style
+  return (option.value == props.value) // eslint-disable-line eqeqeq
+    ? selectStr.value
+    : undefined;
+};
+
+/**
+ * Set the current/default value
+ * (i.e. the value that's come from the server)
+ */
+const validateCurrentValue = () => {
+  // Make sure initial value is one of the allowed options
+  if (typeof currentValue.value !== 'string' || currentValue.value === '') {
+    let ok = false;
+
+    for (let a = 0; a < usableOptions.value.length; a += 1) {
+      if (usableOptions.value[a].value === currentValue.value) {
+        // All good! We found a match
+        if (props.type === 'combobox') {
+          comboValue.value = usableOptions.value[a].label;
+        }
+        ok = true;
+        break;
+      }
+    }
+
+    if (ok === false) {
+      // Lets check whether the initial value matches a label
+      // string instead of the value
+      for (let a = 0; a < usableOptions.value.length; a += 1) {
+        if (usableOptions.value[a].label === currentValue.value) {
+          // All good! We found a match
+          currentValue.value = usableOptions.value[a].value;
+          if (props.type === 'combobox') {
+            comboValue.value = usableOptions.value[a].label;
+          }
+          ok = true;
+          break;
+        }
+      }
+    }
+
+    if (ok === false) {
+      // Could not find a valid match so make current value
+      // empty.
+      currentValue.value = '';
+    }
+
+    emit('invalid', currentValue.value === '');
+  }
+};
+
+/**
+ * Validate new value from last user interaction
+ *
+ * @returns {string|false} String if new value is valid,
+ *                         FALSE otherwise.
+ */
+const validateValue = (val) => {
+  for (let a = 0; a < usableOptions.value.length; a += 1) {
+    if (usableOptions.value[a].value === val) {
+      // make sure there's no funny business going on and that
+      // the selected value is valid
+      return val;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Check a blur event to see if the likert scale radio buttons have
+ * lost focus
+ *
+ * @param {Event} event
+ */
+const radioBlur = (event) => {
+  emit(event.type, event);
+  multiFieldBlur(event, props.fieldId, emit, validateCurrentValue);
+};
+
+/**
+ * Handle changes to radio or select input fields
+ *
+ * @param {Event} event
+ */
+const radioChanged = (event) => {
+  const newVal = (event.target.checked === true)
+    ? validateValue(event.target.value)
+    : true;
+
+  handleChangeShared(event, newVal);
+};
+
+/**
+ * Handle changes to <SELECT> fields
+ *
+ * @param {Event} event
+ */
+const selectChanged = (event) => {
+  handleChangeShared(event, validateValue(event.target.value));
+
+  if (currentValue.value.trim() !== '' && props.noNonEmpty === true) {
+    usableOptions.value = usableOptions.value.filter(removeEmptyFilter);
+  }
+};
+
+/**
+ * Make option list usable for <SELECT> and/or <INPUT type="radio" />
+ *
+ * Normalise key/value pairs
+ */
+const setUsableOptions = () => {
+  // Make sure options are useable
+  let options = normaliseOptions(
+    props.options,
+    currentValue.value,
+    props.dedupe,
+  );
+
+  options = (useEmpty.value === true)
+    ? [{ value: '', label: props.emptyTxt }, ...options]
+    : options;
+
+  // Give each radio option a unique ID
+  usableOptions.value = (renderType.value === 'radio')
+    ? options.map(setOptionIDs(props.fieldId))
+    : options;
+
+  if (renderType.value === 'combo') {
+    // show all the options available until user starts typing
+    filteredOptions.value = usableOptions.value.map(getLabels);
+  }
+};
+
+//  END:  local methods
+// --------------------------------------------------------
 // START: Lifecycle handlers
 
 onBeforeMount(() => {
@@ -597,6 +623,9 @@ onBeforeMount(() => {
     const type = props.type.replace(/[^a-z]+/ig, '').toLowerCase();
 
     if (type === 'radio' || type === 'select') {
+      selectStr.value = (type === 'radio')
+        ? 'checked'
+        : 'selected';
       renderType.value = type;
     } else if (type.includes('type') || type.includes('search') || type.includes('combo')) {
       renderType.value = 'combo';

@@ -110,3 +110,41 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.material-icons {
+  color: #000 !important;
+}
+
+.whole-input {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-top: 0.05rem solid #ccc;
+  list-style-type: none;
+  text-align: left;
+}
+.whole-input:first-child {
+  border-top: none;
+}
+.whole-input__label {
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.whole-input__input {
+  background-color: white;
+  color: black;
+  border: none;
+}
+.whole-input__input input {
+  background-color: white;
+  color: black;
+  border: none;
+}
+.whole-input__input-wrap:not(.whole-input__input-wrap--checkable) {
+  border: 0.05rem solid #ccc;
+  border-radius: 0.25rem;
+}
+.whole-input__required {
+  font-weight: normal;
+  font-style: italic;
+  padding-left: 0.5rem;
+}

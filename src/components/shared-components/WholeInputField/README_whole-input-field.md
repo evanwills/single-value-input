@@ -1,4 +1,4 @@
-# `<SingleValueInput>`
+# `<WholeInputField>`
 
 * [Introduction](#introduction)
 * [Examples](#examples)
@@ -53,14 +53,14 @@
 ---
 ## Introduction
 
-`<SingleValueInput>` is a Vue component that makes it simple to add
+`<WholeInputField>` is a Vue component that makes it simple to add
 nicely styled and accessible single value inputs (i.e. not
 checkboxes, multi select fields or file inputs) to a form.
 
 It renders the field's label, the field itself, error message
 (if appropriate) and help text (if supplied).
 
-`<SingleValueInput>` exposes all the features of standard HTML inputs
+`<WholeInputField>` exposes all the features of standard HTML inputs
 via attributes along with some extra goodies like extra validation on
 top of native input validation (see
 [`custom-validation`](#custom-validation) for more info).
@@ -76,7 +76,7 @@ All these elements are wrapped within an `<LI>` element.
  ! (Not required, no validation, no tabindex control)
  ! This should only be used for fields that are never hidden.
  ! -->
-<SingleValueInput
+<WholeInputField
   field-id="middle-name"
   label="Middle name"
   type="text"
@@ -94,7 +94,7 @@ All these elements are wrapped within an `<LI>` element.
  !       when the field is hidden. This prevents keyboard navigation
  !       users from getting lost in hidden inputs
  ! -->
-<SingleValueInput
+<WholeInputField
   error-msg="First name must be no longer than 100 characters and only contain letters, commas, hyphens, spaces and/or appostrophies."
   field-id="first-name"
   help-txt="We only use your first name when sending you emails"
@@ -126,7 +126,7 @@ allow userto go directly to the input field
 >           frequently used. Like login fields.
 
 ```html
-<SingleValueInput
+<WholeInputField
   accesskey="n"
   field-id="username"
   label="Username"
@@ -205,7 +205,7 @@ const sanitiseMsg = (event) => {
   event.target.value = event.target.value.replace(regex, '').substring(0, 500);
 };
 </script>
-<SingleValueInput
+<WholeInputField
   :custom-validation="badInput"
   field-id="message-txt"
   label="Message"
@@ -247,7 +247,7 @@ it's easy to implement and helps ensure versatility of this component.
 >           interactions.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="email2"
   label="Secondary email"
   type="email"
@@ -290,7 +290,7 @@ const colorOptions = [
 ]
 </script>
 
-<SingleValueInput
+<WholeInputField
   empty-txt="-- please select a colour --"
   field-id="colour"
   label="Favourite colour"
@@ -316,7 +316,7 @@ invalid
 >           also cause the error message to show.
 
 ```html
-<SingleValueInput
+<WholeInputField
   error-msg="Names must be between 2 and 100 charachters can only include alphabetical characters, spaces, fullstops, hyphens and apostrophes"
   field-id="first-name"
   label="First name"
@@ -352,7 +352,7 @@ If both are empty or invalid, then both fields must be marked as
 invalid.
 
 ```html
-<SingleValueInput
+<WholeInputField
   error-msg="Please enter a valid Australian mobile phone number"
   external-invalid
   field-id="mobile"
@@ -380,7 +380,7 @@ field with the information about why the field has been marked
 as invalid.
 
 ```html
-<SingleValueInput
+<WholeInputField
   error-msg="Please enter a valid Australian mobile phone number"
   extra-desc-by-ids="no-phone-error"
   external-invalid
@@ -411,7 +411,7 @@ Used to link the field to its label, error message and help
 text
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="mobile"
   label="Mobile phone number"
   pattern="^04[0-9]{8}$"
@@ -435,7 +435,7 @@ By default help text is rendered after the input. This overrides
 the default to render the help text before the input
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="mobile"
   help-first
   help-text="Only valid Australian mobile phone numbers will be accepted"
@@ -468,7 +468,7 @@ will be referenced first.)
 >           rendered and `help-txt` will be ignored.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="mobile"
   help-text="Only valid Australian mobile phone numbers will be accepted"
   label="Mobile phone number"
@@ -491,7 +491,7 @@ This is an accessiblity requirement.
 > __Note:__ If label is undefined or empty, an error will be thrown
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   :tabindex="isVisible"
@@ -513,7 +513,7 @@ Used for email, number, text & url type input fields as well
 as textarea fields
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   max-length="100"
@@ -538,7 +538,7 @@ Maximum value allowed
 If user input is over `max-val`, field will show as being in error.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   max-val="100"
@@ -546,7 +546,7 @@ If user input is over `max-val`, field will show as being in error.
   type="number"
   v-on:change=fullNameChange($event)" />
 
-<SingleValueInput
+<WholeInputField
   field-id="start-datetime"
   label="Date and time to start"
   max-val="2023-07-01T08:30:00+1000"
@@ -554,7 +554,7 @@ If user input is over `max-val`, field will show as being in error.
   type="datetime-local"
   v-on:change=fullNameChange($event)" />
 
-<SingleValueInput
+<WholeInputField
   field-id="start-date"
   label="Start date"
   max-val="2024-01-20"
@@ -562,7 +562,7 @@ If user input is over `max-val`, field will show as being in error.
   type="date"
   v-on:change=fullNameChange($event)" />
 
-<SingleValueInput
+<WholeInputField
   field-id="start-time"
   label="Start time"
   max-val="17:30:00"
@@ -601,7 +601,7 @@ minimum number of characters required before the option getter
 is called.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   min-length="2"
@@ -619,7 +619,7 @@ const async getFilteredCountry = (inputs) => {
 }
 
 </script>
-<SingleValueInput
+<WholeInputField
   throttle="0.5"
   field-id="country"
   label="Country"
@@ -648,7 +648,7 @@ If user input is less than `min-val`, field will show as being in
 error.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   min-val="100"
@@ -656,7 +656,7 @@ error.
   type="number"
   v-on:change=fullNameChange($event)" />
 
-<SingleValueInput
+<WholeInputField
   field-id="start-datetime"
   label="Date and time to start"
   min-val="2023-07-01T08:30:00+1000"
@@ -664,7 +664,7 @@ error.
   type="datetime-local"
   v-on:change=fullNameChange($event)" />
 
-<SingleValueInput
+<WholeInputField
   field-id="start-date"
   label="Start date"
   min-val="2024-01-20"
@@ -672,7 +672,7 @@ error.
   type="date"
   v-on:change=fullNameChange($event)" />
 
-<SingleValueInput
+<WholeInputField
   field-id="start-time"
   label="Start time"
   min-val="17:30:00"
@@ -730,7 +730,7 @@ const pets = [
   { value: 'rat', label: 'Rat' }
 ];
 </script>
-<SingleValueInput
+<WholeInputField
   field-id="pet"
   label="Type of pet"
   empty-txt="-- please choose pet type --"
@@ -758,7 +758,7 @@ mistakes while typing. This allows the user toggle whether or not
 their password is visible or obfuscated.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="password"
   label="New password"
   no-toggle
@@ -808,7 +808,7 @@ const pets = [
   { value: 'rat', label: 'Rat' }
 ];
 </script>
-<SingleValueInput
+<WholeInputField
   field-id="pet"
   label="Type of pet"
   :options="pets"
@@ -872,7 +872,7 @@ const async getFilteredCountry = (inputs) => {
  ! of once every half second when there are two or more characters
  ! in the input field
  ! -->
-<SingleValueInput
+<WholeInputField
   throttle="0.5"
   field-id="country"
   label="Country"
@@ -908,7 +908,7 @@ const pets = [
   { value: 'rat', label: 'Rat' }
 ];
 </script>
-<SingleValueInput
+<WholeInputField
   field-id="pet-type"
   label="Type of pet"
   :options="pets"
@@ -917,7 +917,7 @@ const pets = [
   type="select"
   v-on:change="petTypeChange($event)"
   v-on:showother="showOther($event)" />
-<SingleValueInput v-if="otherPet === true"
+<WholeInputField v-if="otherPet === true"
   field-id="pet-type-other"
   label="Other type of pet"
   :tabindex="isVisible"
@@ -940,7 +940,7 @@ JavaScript regular expression for validating string input
 >           [`custom-validation`](#custom-validation).
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   pattern="^[a-zA-Z][a-zA-Z0-9. -]{1,50}$"
@@ -978,7 +978,7 @@ Helper text to show inside input field when value is empty.
 >           [url](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/url)
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   placeholder="e.g. Gabriel Smith"
@@ -1010,7 +1010,7 @@ input field box.
 >           specify it with the `prefix-icon` like so.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="amount"
   label="How much money do you want"
   placeholder="50"
@@ -1043,7 +1043,7 @@ Whether or not the field is readonly
 > [MDN `readonly`](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/readonly#attribute_interactions)
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   readonly
@@ -1074,7 +1074,7 @@ Whether or not the field requres a non-empty value
 >           has no effect.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="full-name"
   label="Full name"
   required
@@ -1114,7 +1114,7 @@ Number of lines in a textarea input.
 > __Note:__ `rows` is not relevant to any other input type
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="description"
   label="Long description"
   rows="10"
@@ -1139,7 +1139,7 @@ If `same-as-value` is not null and is different to the current value,
 then the current value will be deemed invalid.
 
 ```html
-<SingleValueInput
+<WholeInputField
   error-msg="New password must match confirm password"
   field-id="new-password"
   label="New password"
@@ -1147,7 +1147,7 @@ then the current value will be deemed invalid.
   :tabindex="isVisible"
   type="password"
   v-on:change="evenChange($event)" />
-<SingleValueInput
+<WholeInputField
   error-msg="Confirm password must match new password"
   field-id="confirm-password"
   label="Confirm password"
@@ -1170,7 +1170,7 @@ functionality
 >           type fields
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="description"
   label="Long description"
   spell-check
@@ -1194,7 +1194,7 @@ Used for date, datetime-local, number, range & time type
 input fields.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="even-numbers"
   label="Favourite even number"
   step="2"
@@ -1233,7 +1233,7 @@ input field box.
 >           specify it with the `suffix-icon` like so.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="percent"
   label="Percent"
   placeholder="50"
@@ -1267,7 +1267,7 @@ prevent the user using the keyboard to tab into hidden inputs.
 >           navigation users may (will probably) get lost in the page.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="even-numbers"
   label="Favourite even number"
   :tabindex="isVisible"
@@ -1329,7 +1329,7 @@ Allowed types are:
 
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="even-numbers"
   label="Favourite even number"
   :tabindex="isVisible"
@@ -1365,7 +1365,7 @@ Predefined validation settings for common input types:
 Automatically sets input [pattern](#pattern) attribute, [placeholder](#placeholder) text, [error message](#error-msg), [custom validation](#custom-validation) function and sanitisation function (triggered on `keyup` event)
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="mobile-number"
   label="Mobile"
   :tabindex="isVisible"
@@ -1383,7 +1383,7 @@ Automatically sets input [pattern](#pattern) attribute, [placeholder](#placehold
 Predefined value for the field.
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="even-numbers"
   label="Favourite even number"
   :tabindex="isVisible"
@@ -1404,7 +1404,7 @@ This should only be used when your help content needs to contain
 HTML (e.g. links or bullet points).
 
 ```html
-<SingleValueInput
+<WholeInputField
   field-id="prime-numbers"
   label="Favourite prime number"
   :tabindex="isVisible"
@@ -1417,7 +1417,7 @@ HTML (e.g. links or bullet points).
       Wikipedia Prime Number
     </a>
   </p>
-</SingleValueInput>
+</WholeInputField>
 ```
 
 If plain text is all you need for your help text, use the
@@ -1444,11 +1444,11 @@ If plain text is all you need for your error message, use the
 ---
 ## Events
 
-The only event that SingleValueInput deliberately emits is `change`
+The only event that WholeInputField deliberately emits is `change`
 to indicate that there is a valid input that the user has
 entered/selected.
 
-`SingleValueInput` will re-emit all other standard DOM events an
+`WholeInputField` will re-emit all other standard DOM events an
 `<INPUT>`, `<SELECT>` or `<TEXTAREA>` field emits along with the
 Event object that was initially emitted by the original element.
 This is so the client code can watch for any events it is interested

@@ -1,5 +1,5 @@
 <template>
-  <li class="whole-input" :id="wrapID">
+  <li :class="wrapClass" :id="wrapID">
     <label v-if="!isCheckable" :for="fieldId" :class="labelClass" data-tmp>
       {{ label }}
       <span class="whole-input__required">{{ requiredStr }}</span>
@@ -9,13 +9,129 @@
       <span class="whole-input__required">{{ requiredStr }}</span>
       <span :class="errorIconClass">priority_high</span>
     </span>
+
     <div v-if="(hasHelp === true && helpFirst === true)" :class="helpClass" :id="getID('help')">
       <slot name="help"><p>{{ helpTxt }}</p></slot>
     </div>
+
     <div :class="inputClass">
       <span v-if="iconPre !== ''" :class="iconPreCLass">{{ iconPre }}</span>
+      <!-- START: auto-complete -->
+      <Autocomplete
+        v-if="type === 'combobox'"
+        :aria-describedby="describedByIDs"
+        :debounce-time="comboThrottle"
+        :default-value="currentValue"
+        :disabled="disabled"
+        :id="fieldId"
+        :get-result-value="comboLabelGetter"
+        :placeholder="customPlace"
+        :search="optionsGetter"
+        submit-on-enter
+        submit-on-tab
+        :tab-index="tabindex"
+        v-on:submit="comboboxChanged($event)"
+        v-on:update="comboboxUpdated($event)"
+        v-on:focus="genericHandler($event)"
+        v-on:keydown="genericHandler($event)"
+        v-on:keypress="genericHandler($event)"
+        v-on:keyup="keyupHandler($event)"
+        v-on:valid="comboboxInvalid($event)" />
+      <!--  END:  auto-complete -->
+
+      <!-- START: checkbox-list -->
+      <CheckboxList
+        v-else-if="type === 'checkbox'"
+        :aria-describedby="describedByIDs"
+        :dedupe="dedupe"
+        :field-id="fieldId"
+        :help-ids="describedByIDs"
+        :is-required="required"
+        :is-readonly="readonly"
+        :is-disabled="disabled"
+        :last-updated="lastUpdated"
+        :max-length="maxLength"
+        :min-length="minLength"
+        :null-to-false="nullToFalse"
+        :options="options"
+        :tab-index="tabindex"
+        v-on:blur="genericHandler($event)"
+        v-on:change="simpleChange($event)"
+        v-on:checkedchange="checkedChanged($event)"
+        v-on:focus="genericHandler($event)"
+        v-on:invalid="simpleInvalid($event)"
+        v-on:lostfocus="lostFocus($event)" />
+      <!--  END:  checkbox-list -->
+
+      <!-- START: likert-scale -->
+      <LikertScale
+        v-else-if="type === 'likert'"
+        :aria-describedby="describedByIDs"
+        :field-id="`likert-${fieldId}`"
+        :labeled-by="fieldId"
+        :is-required="required"
+        :is-readonly="readonly"
+        :is-disabled="disabled"
+        :last-updated="lastUpdated"
+        :questions="questions"
+        :options="options"
+        :tab-index="tabindex"
+        :unique-two-d="uniqueTwoD"
+        :values="value"
+        v-on:change="simpleChange($event)"
+        v-on:invalid="simpleInvalid($event)"
+        v-on:lostfocus="lostFocus($event)" />
+      <!--  END:  likert-scale -->
+
+      <!-- START: numeric-input -->
+      <NumericInput
+        v-else-if="type === 'numeric'"
+        :class="inputFieldClass"
+        :described-by="describedByIDs"
+        :disabled="disabled"
+        :field-id="fieldId"
+        :last-updated="lastUpdated"
+        :max="maxAttr"
+        :min="minAttr"
+        :pattern="customPat"
+        :placeholder="customPlace"
+        :step="stepAttr"
+        :readonly="readonly"
+        :required="required"
+        :tabindex="tabindex"
+        :value="currentValue"
+        v-model="currentValue"
+        v-on:blur="genericHandler($event)"
+        v-on:change="simpleChange($event)"
+        v-on:focus="genericHandler($event)"
+        v-on:invalid="simpleInvalid($event)"
+        v-on:keydown="genericHandler($event)"
+        v-on:keypress="genericHandler($event)"
+        v-on:keyup="simpleKeyUp($event)" />
+      <!--  END:  numeric-input -->
+
+      <!-- START: pretty-select -->
+      <PrettySelect
+        v-else-if="type === 'prettyselect'"
+        :dedupe="dedupe"
+        :empty-txt="emptyTxt"
+        :field-id="fieldId"
+        :force-above="forceAbove"
+        :is-required="required"
+        :is-readonly="readonly"
+        :no-non-empty="noNonEmpty"
+        :options="options"
+        :tab-index="tabindex"
+        :value="currentValue"
+        v-on:blur="genericHandler($event)"
+        v-on:change="selectChanged($event)"
+        v-on:focus="genericHandler($event)"
+        v-on:invalid="simpleInvalid($event)" />
+      <!--  END:  numeric-input -->
+
+      <!-- START: radio-select -->
       <RadioSelectInput
-        v-if="isSelect"
+        v-else-if="isSelect"
         :field-id="fieldId"
         :dedupe="dedupe"
         :empty-txt="emptyTxt"
@@ -29,82 +145,13 @@
         :tab-index="tabindex"
         :type="typeAttr"
         :value="currentValue"
-        v-on:blur="selectChanged($event)"
+        v-on:blur="genericHandler($event)"
         v-on:change="selectChanged($event)"
         v-on:focus="genericHandler($event)"
-        v-on:invalid="selectInvalid($event)" />
-      <!-- -->
-      <PrettySelect
-        v-else-if="type === 'prettyselect'"
-        :dedupe="dedupe"
-        :empty-txt="emptyTxt"
-        :field-id="fieldId"
-        :force-above="forceAbove"
-        :is-required="required"
-        :is-readonly="readonly"
-        :no-non-empty="noNonEmpty"
-        :options="options"
-        :tab-index="tabindex"
-        :value="currentValue"
-        v-on:blur="selectChanged($event)"
-        v-on:change="selectChanged($event)"
-        v-on:focus="genericHandler($event)"
-        v-on:invalid="selectInvalid($event)" />
-      <!-- -->
-      <CheckboxList
-        v-else-if="type === 'checkbox'"
-        :aria-describedby="describedByIDs"
-        :dedupe="dedupe"
-        :field-id="fieldId"
-        :help-ids="describedByIDs"
-        :is-required="required"
-        :is-readonly="readonly"
-        :is-disabled="disabled"
-        :last-updated="lastUpdated"
-        :max-length="maxLength"
-        :min-length="minLength"
-        :options="options"
-        :tab-index="tabindex"
-        v-on:blur="selectChanged($event)"
-        v-on:change="selectChanged($event)"
-        v-on:checkedchange="checkedChanged($event)"
-        v-on:focus="genericHandler($event)"
-        v-on:invalid="selectInvalid($event)" />
-      <LikertScale
-        v-else-if="type === 'likert'"
-        :aria-describedby="describedByIDs"
-        :field-id="`likert-${fieldId}`"
-        :labeled-by="fieldId"
-        :is-required="required"
-        :is-readonly="readonly"
-        :is-disabled="disabled"
-        :last-updated="lastUpdated"
-        :questions="maxLength"
-        :options="options"
-        :tab-index="tabindex"
-        v-on:focusout="selectChanged($event)"
-        v-on:change="selectChanged($event)"
-        v-on:invalid="selectInvalid($event)" />
-      <Autocomplete
-        v-else-if="type === 'combobox'"
-        :aria-describedby="describedByIDs"
-        :debounce-time="comboThrottle"
-        :default-value="currentValue"
-        :disabled="disabled"
-        :id="fieldId"
-        :get-result-value="comboLabelGetter"
-        :placeholder="customPlace"
-        :search="optionsGetter"
-        submit-on-enter
-        submit-on-tab
-        :tab-index="tabindex"
-        v-on:submit="comboboxChanged($event)"
-        v-on:update="comboboxChanged($event)"
-        v-on:focus="genericHandler($event)"
-        v-on:keydown="genericHandler($event)"
-        v-on:keypress="genericHandler($event)"
-        v-on:keyup="keyupHandler($event)"
-        v-on:valid="comboboxInvalid($event)" />
+        v-on:invalid="simpleInvalid($event)" />
+      <!--  END:  radio-select -->
+
+      <!-- START: textarea (standard) -->
       <textarea
         v-else-if="isTextarea"
         class="whole-input__input"
@@ -127,6 +174,9 @@
         v-on:keydown="genericHandler($event)"
         v-on:keypress="genericHandler($event)"
         v-on:keyup="keyupHandler($event)"></textarea>
+      <!--  END:  textarea (standard) -->
+
+      <!-- START: input (standard) -->
       <input
         v-else
         :class="inputFieldClass"
@@ -145,12 +195,13 @@
         :required="required"
         :type="typeAttr"
         v-model="currentValue"
-        v-on:blur="hasChanged($event)"
+        v-on:blur="genericHandler($event)"
         v-on:change="hasChanged($event)"
         v-on:focus="genericHandler($event)"
         v-on:keydown="genericHandler($event)"
         v-on:keypress="genericHandler($event)"
         v-on:keyup="keyupHandler($event)" />
+      <!--  END:  input (standard) -->
       <button
         v-if="type === 'password' && noToggle === false"
         aria-live="polite"
@@ -189,14 +240,16 @@ import {
   ref,
   useSlots,
 } from 'vue';
-import { getEpre, isObj } from '../../../utils/general-utils';
-import { slotHasContent } from '../../../utils/vue-utils';
+import { isObj } from '../../../utils/data-utils';
+import { getEpre } from '../../../utils/general-utils';
+import { hasContent } from '../../../utils/vue-utils';
 import Autocomplete from '../Autocomlete/Autocomplete.vue';
 import CheckboxList from './CheckboxList.vue';
 import LikertScale from './LikertScale.vue';
 import PrettySelect from './PrettySelect.vue';
 import RadioSelectInput from './RadioSelectInput.vue';
 import validators from './validators';
+import NumericInput from './NumericInput.vue';
 
 const slots = useSlots();
 // --------------------------------------------------
@@ -211,6 +264,7 @@ const emit = defineEmits([
   'keydown',
   'keypress',
   'keyup',
+  'lostfocus',
 ]);
 
 //  END:  Emitted events
@@ -249,7 +303,7 @@ const props = defineProps({
    * >       `CheckboxList` component and called on and `blur`
    * >       events.
    *
-   * @property {Function} customValidation
+   * @property {Function} customSanitisation
    */
   customSanitisation: { type: Function, required: false, default: null },
 
@@ -362,7 +416,7 @@ const props = defineProps({
    * >       message won't show until this field changes or
    * >       emits a blur event.
    *
-   * @property {boolean} externalInvalid
+   * @property {boolean} externalInvalidShow
    */
   externalInvalidShow: { type: Boolean, required: false, default: false },
 
@@ -418,7 +472,7 @@ const props = defineProps({
    * > __Note:__ If you need to include HTML (e.g. a link) in the
    * >       error message use the "help" slot instead.
    *
-   * @property {string} errorMsg
+   * @property {string} helpTxt
    */
   helpTxt: { type: String, required: false, default: '' },
 
@@ -451,7 +505,7 @@ const props = defineProps({
    * [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label)
    * for more info)
    *
-   * @property {string} errorMsg
+   * @property {string} label
    */
   label: { type: String, required: true },
 
@@ -551,6 +605,17 @@ const props = defineProps({
    * @property {boolean} noNonEmpty
    */
   noToggle: { type: Boolean, required: false, default: false },
+
+  /**
+   * For checkbox lists it sometimes causes issues if the server
+   * provides null values for checkboxes
+   *
+   * If data from the server has null values for each checkbox item,
+   * Make null options FALSE after the first checkbox is checked
+   *
+   * @property {boolean} noNonEmpty
+   */
+  nullToFalse: { type: Boolean, required: false, default: false },
 
   /**
    * List of options available in a <SELECT> or <INPUT type="radio">
@@ -740,7 +805,7 @@ const props = defineProps({
    *
    * @property {number|string} maxVal
    */
-  step: { type: Number, required: false, default: null },
+  step: { type: Number, required: false, default: 1 },
 
   /**
    * Icon or character to render at the end of the input field
@@ -800,6 +865,48 @@ const props = defineProps({
   type: { type: String, required: true },
 
   /**
+   * If you are asking users to rank items in order of preference,
+   * you may want them to be able to select each option only once
+   * and want all the options to be used up.
+   *
+   * By setting `unique-two-d` the user will only be able to select
+   * each option once. If they select an option a second time, the
+   * first one will be made empty and they'll have to update their
+   * selection for that row.
+   *
+   * e.g. Rank your preferred modes of transport from 1 to 9, where
+   *      1 is most preferred and 9 is least preferred
+   *
+   * VALID:
+   * * Bicycle    - 1
+   * * Bus        - 5
+   * * Car        - 7
+   * * Ferry      - 4
+   * * Motorcycle - 6
+   * * Taxi       - 8
+   * * Train      - 3
+   * * Walking    - 2
+   *
+   * The above is valid because numbers are only used once
+   *
+   * INVALID
+   * * Bicycle    - 1
+   * * Bus        - 4
+   * * Car        - 2
+   * * Ferry      - 4
+   * * Motorcycle - 2
+   * * Taxi       - 3
+   * * Train      - 7
+   * * Walking    - 1
+   *
+   * The above is invalid because 1, 2 & 4 have been used multiple
+   * times and 5, 6 & 8 have not been used atall
+   *
+   * @property {boolean} uniqueTwoD
+   */
+  uniqueTwoD: { type: Boolean, required: false, default: false },
+
+  /**
    * Common standard validation types for text & numeric inputs
    *
    * Provides standard pattern attribute value, placeholder text
@@ -826,7 +933,13 @@ const props = defineProps({
   /**
    * Predefined value for the field.
    *
-   * @property {string|number|undefined} value
+   * NOTE: for 'likert' scale fields the value must be an indexed
+   *       object (key/value) pair where the key is a string and
+   *       the value is a string, number or null.
+   *       the key MUST match the ID of one of the questions in the
+   *       likert scale. If not, it will be ignored
+   *
+   * @property {string|number|Object|undefined} value
    */
   value: { required: false, default: '' },
 });
@@ -837,7 +950,7 @@ const props = defineProps({
 
 const inputTypes = [
   'checkbox', 'color', 'combobox', 'date', 'datetime-local', 'email',
-  'month', 'number', 'password', 'radio', 'range', 'select', 'tel',
+  'month', 'number', 'numeric', 'password', 'radio', 'range', 'select', 'tel',
   'text', 'textarea', 'time', 'url', 'week',
   'likert', 'prettyselect',
 ];
@@ -879,7 +992,7 @@ const currentValue = ref('');
 const customErr = ref('');
 
 /**
- * @property {string|undefined} customErr
+ * @property {string|undefined} customPat
  */
 const customPat = ref(undefined);
 
@@ -1047,10 +1160,10 @@ const getID = (suffix) => { // eslint-disable-line arrow-body-style
  *
  * @returns {boolean} TRUE if type is "radop". FALSE otherwise
  */
-const isCheckable = computed(() => (props.type === 'radio' || props.type === 'checkbox'));
+const isCheckable = computed(() => ['checkbox', 'likert', 'radio'].indexOf(props.type) >= 0);
 
 const hasLimit = (type) => {
-  const areLimited = ['date', 'datetime-local', 'month', 'number', 'range', 'time', 'week'];
+  const areLimited = ['date', 'datetime-local', 'month', 'number', 'numeric', 'range', 'time', 'week'];
 
   return (areLimited.indexOf(type) > -1);
 };
@@ -1250,9 +1363,16 @@ const isTextarea = computed(() => (props.type === 'textarea'));
 
 const labelClass = computed(() => {
   const tmp = 'whole-input__label';
-  return (props.hideLabel === true)
-    ? `${tmp} visually-hidden`
-    : tmp;
+  let output = tmp;
+
+  if (hasError.value === true) {
+    output += ` ${tmp}--invalid`;
+  }
+  if (props.hideLabel === true) {
+    output += `${tmp} visually-hidden`;
+  }
+
+  return output;
 });
 
 /**
@@ -1406,6 +1526,16 @@ const stepAttr = computed(() => { // eslint-disable-line arrow-body-style
 
 const wrapID = computed(() => `${props.fieldId}-wrap`);
 
+const wrapClass = computed(() => {
+  const tmp = 'whole-input';
+  let output = `${tmp} ${tmp}--${props.type}`;
+
+  if (isCheckable.value === true) {
+    output += ` ${tmp}--checkable`;
+  }
+  return output;
+});
+
 //  END:   Computed properties
 // --------------------------------------------------
 // START: Local methods
@@ -1422,26 +1552,62 @@ const checkedChanged = (event) => {
   emit('checkedchange', event);
 };
 
+const lostFocus = (event) => {
+  emit('lostfocus', event);
+};
+
 /**
  * Handle a combobox (Autocomplete.vue) isValid event
  *
  * @param {Object<{isValid: boolean, matchCount: number}} event
  */
 const comboboxInvalid = (event) => {
-  if (typeof event.matchCount !== 'undefined' && typeof event.isValid === 'boolean') {
-    showError.value = (event.matchCount < 1 || event.isValid === false);
+  if (isObj(event)) {
+    if (typeof event.matchCount === 'number' && typeof event.isValid === 'boolean') {
+      showError.value = (event.isValid === false || event.matchCount < 1);
 
-    emit('invalid', showError.value);
+      emit('invalid', showError.value);
+    }
   }
 };
 
 /**
- * Handle RadioSelectInput 'invalid' event
+ * Handle basic 'change' events
  *
- * @param {boolean} isInvalid Whether or not the RadioSelectInput
- *                            is currently in an invalid state
+ * Just update the current value pass and the event up to the
+ * parent component.
+ *
+ * @param {any} newValue Whatever was emitted by the child field(s)
  */
-const selectInvalid = (isInvalid) => {
+const simpleChange = (newValue) => {
+  currentValue.value = newValue;
+  emit('change', newValue);
+};
+
+/**
+ * Handle basic 'keyup' events
+ *
+ * Just update the current value and pass the event up to the
+ * parent component.
+ *
+ * @param {string|number} newValue Value emitted by text like
+ *                                 input field
+ */
+const simpleKeyUp = (newValue) => {
+  currentValue.value = newValue;
+  emit('keyup', newValue);
+};
+
+/**
+ * Handle basic 'invalid' event
+ *
+ * Just update the showError value and pass the event up to the
+ * parent component.
+ *
+ * @param {boolean} isInvalid Whether or not the field that just
+ *                            changed now has an invalid value
+ */
+const simpleInvalid = (isInvalid) => {
   showError.value = isInvalid;
   emit('invalid', showError.value);
 };
@@ -1469,26 +1635,40 @@ const selectChanged = (event) => {
  *                      RadioSelectInput component
  */
 const comboboxChanged = (event) => {
-  let tmp = null;
-  let isStrNum = false;
+  const isStrNum = (typeof event === 'string' || typeof event === 'number');
 
-  if (typeof event === 'string' || typeof event === 'number' || isObj(event)) {
+  let tmp = null;
+
+  if (isStrNum === true || isObj(event)) {
     tmp = event;
-    isStrNum = true;
+  } else if (Array.isArray(event) && event.length === 1) {
+    // eslint-disable-next-line prefer-destructuring
+    tmp = event[0];
   } else if (Array.isArray(event.target) && event.target.length === 1) {
-    tmp = event.target[0]; // eslint-disable-line prefer-destructuring
+    // eslint-disable-next-line prefer-destructuring
+    tmp = event.target[0];
   }
 
   if (tmp !== null) {
+    let dud = false;
+
     if (isStrNum === true) {
       currentValue.value = tmp;
-    } else if (typeof tmp.label !== 'undefined') {
-      currentValue.value = tmp.label;
-    } else if (typeof tmp.value !== 'undefined') {
-      currentValue.value = tmp.value;
-    } else if (typeof tmp.id !== 'undefined') {
-      currentValue.value = tmp.id;
+    } else if (isObj(tmp)) {
+      if (typeof tmp.value !== 'undefined') {
+        currentValue.value = tmp.value;
+      } else if (typeof tmp.label !== 'undefined') {
+        currentValue.value = tmp.label;
+      } else if (typeof tmp.id !== 'undefined') {
+        currentValue.value = tmp.id;
+      } else {
+        dud = true;
+      }
     } else {
+      dud = true;
+    }
+
+    if (dud === true) {
       throw new Error(
         `${ePre.value('comboboxChanged')} could not determine the current value`,
       );
@@ -1499,6 +1679,12 @@ const comboboxChanged = (event) => {
     emit('change', tmp);
   } else {
     emit('change', null);
+  }
+};
+
+const comboboxUpdated = (event) => {
+  if (typeof event.type === 'string') {
+    emit(event.type, event);
   }
 };
 
@@ -1515,8 +1701,6 @@ const hasChanged = (event) => {
   currentValue.value = event.target.value;
   errorChange.value = Date.now();
 
-  console.log('showError.value:', showError.value);
-
   if (showError.value === false && customVal.value !== null
       && (props.required === true || currentValue.value !== '')
   ) {
@@ -1525,8 +1709,6 @@ const hasChanged = (event) => {
   } else if (props.sameAsValue !== null && currentValue.value !== props.sameAsValue) {
     showError.value = true;
   }
-  // console.log('showError.value (after):', showError.value);
-  // console.groupEnd();
 
   if (showError.value) {
     if (iconPost.value !== 'priority_high') {
@@ -1544,60 +1726,15 @@ const hasChanged = (event) => {
   }
 };
 
-// /**
-//  * Handle `blur` events emitted by <INPUT> or <TEXTAREA> elements
-//  *
-//  * @param {Event} event An event emitted by a change event from an
-//  *                      <INPUT> or <TEXTAREA> element rendered
-//  *                      directly within this component
-//  */
-
-// const hasBlured = (event) => {
-//   showError.value = !event.target.checkValidity();
-//   if (showError.value === false) {
-//     emit('change', event);
-//   }
-// };
-
-// /**
-//  * Convert an ISO-8601 time string in the number of seconds
-//  * after midnight.
-//  *
-//  * Used for easy comparison of current value with min/max values
-//  * when validating time
-//  *
-//  * @param {string} input ISO-8601 Times tring
-//  *
-//  * @returns {number|false} Time as seconds after midnight, if
-//  *                         input is valid. FALSE otherwise.
-//  */
-// const getTimeAsSeconds = (input) => {
-//   const regex = /^([01][0-9]|2[[0-3]):([0-5][0-9])(?::([0-5][0-9]))(\.[0-9]{1,10})?$/;
-//   const matches = input.match(regex);
-
-//   if (matches !== null) {
-//     let output = (matches[1] * 3600) + (matches[2] * 60);
-
-//     if (typeof matches[3] !== 'undefined') {
-//       output += matches[3];
-//     }
-//     if (typeof matches[4] !== 'undefined') {
-//       output += matches[4];
-//     }
-
-//     return output;
-//   }
-
-//   return false;
-// };
-
 /**
  * Re-emit a focus, keyup, keydown or keypress event.
  *
  * @param {Event} event
  */
 const genericHandler = (event) => {
-  emit(event.type, event);
+  if (typeof event.type === 'string') {
+    emit(event.type, event);
+  }
 };
 
 /**
@@ -1609,23 +1746,9 @@ const keyupHandler = (event) => {
   ) {
     // eslint-disable-next-line no-param-reassign
     event.target.value = customSan.value(event.target.value);
-  } else {
-    emit(event.type, event);
   }
-};
 
-/**
- * Check whether there's some content to render for a given text block
- *
- * @param {string} slotName Name of the slot to be checked
- * @param {string} propName Name of the component property/attribute
- *                          to be checked
- *
- * @returns {boolean}
- */
-const notEmpty = (slotName, propName) => { // eslint-disable-line arrow-body-style
-  return ((typeof slots !== 'undefined' && slots !== null && slotHasContent(slots[slotName]))
-    || (typeof props[propName] === 'string' && props[propName].trim() !== ''));
+  emit(event.type, event);
 };
 
 /**
@@ -1677,7 +1800,7 @@ onBeforeMount(() => {
 
   ePre.value = getEpre('whole-input-field', props.fieldId);
 
-  if (props.type === 'select' || props.type === 'radio') {
+  if (props.type === 'select' || props.type === 'radio' || props.type === 'prettyselect') {
     // Make sure there's at least two options to render in
     // select/radio input
     if (!Array.isArray(props.options) || props.options.length < 2) {
@@ -1694,7 +1817,7 @@ onBeforeMount(() => {
     : '';
 
   // Do we have a help text block to show the user?
-  hasHelp.value = notEmpty('help', 'helpTxt');
+  hasHelp.value = hasContent(slots, props, 'help', 'helpTxt');
 
   iconPost.value = '';
   iconPre.value = '';
@@ -1774,7 +1897,7 @@ onBeforeMount(() => {
   iconPostTmp.value = iconPost.value;
 
   // Do we have an error message to show the user?
-  hasError.value = notEmpty('error') || customErr.value !== '';
+  hasError.value = hasContent(slots, props, 'error') || customErr.value !== '';
 
   if (props.requiredRev === true) {
     optionalTxt.value = (typeof props.optionalText === 'string' && props.optionalText.trim() !== '')

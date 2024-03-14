@@ -1,99 +1,22 @@
 // Primary brand colours
-$tsf-red: #da1710; // was #e31837
-// 8% transparency of standard red
-$tsf-red--85: rgba(218, 23, 16, 0.85);
-$tsf-red--08: rgba(218, 23, 16, 0.08);
-// $tsf-red--08: #da171014;
-$tsf-red-hover: #b2150f; // was #ba0414
-$tsf-bright-blue: #0021ea; // was #0069d5
-// 40% transparency of standard bright blue
-$tsf-bright-blue--40: rgba(0, 33, 234, 0.4);
-// $tsf-bright-blue--40: #0021ea66;
+$red: rgb(200, 20, 15);
+$red--08: rgba(200, 20, 15, 0.08);
+$bright-blue: rgb(0, 30, 234);
 
-$tsf-golden-sand-dark: #da7e1b; // was #e58221
-$tsf-golden-sand-dark-hover: #985812; // was #d75b05
-$tsf-field-borders: #8295ab; // was #d8d8d8
+$field-borders: rgb(130, 150, 170);
 
 $black: #000;
-// $black--80: #000000cc;
 $black--80: rgba(0, 0, 0, 0.8);
-// $black--50: #00000080;
-$black--50: rgba(0, 0, 0, 0.5);
-// $black--33: #00000054;
-$black--33: rgba(0, 0, 0, 0.33);
-// $box-shadow: #00000033;
-$black--20: rgba(0, 0, 0, 0.2);
-// $box-shadow: #00000029;
-$black--16: rgba(0, 0, 0, 0.16);
-// $box-shadow: #0000001A;
-$black--10: rgba(0, 0, 0, 0.1);
-$white: #fff;
-$off-white: #bdbdbd;
+$white: rgb(255, 255, 255);
 
 // Blues
-$navy-blue: #0a214d;  // was #002647
-$light-navy-blue: #003767; // old #003767 | new #23375f;
-$light-sky-blue: #b2e9fc; // was #2e9bd2
-$dark-blue: #082548;
-$electric-blue: $light-sky-blue; // was #259ad5
-$middle-blue: $light-navy-blue; // was #003768;
-$light-blue: #b2e9fc; // was #184f7e
-$pale-blue: #e6f1f6;
-$utility-blue: $tsf-bright-blue;
-$utility-blue-hover: #0017a3; // was #025DA3;
-$blue: $tsf-bright-blue;
-$blue-hover: $utility-blue-hover;
+$navy-blue: rgb(15, 30, 70);
+$utility-blue: $bright-blue;
 
-$orange: #da7e1b; // was #f37814
-$utility-yellow: #e69338;// was #F1C761
-
-$grey: #F7F7F7;
-$dark-grey: #333; // was #444444
-$less-dark-grey: $dark-grey; // was 4A4C4B
+$dark-grey: #333;
 $light-grey-para: #666;
-$disabled-txt: #76889C;
-$regular-grey: #ccc;
-$middle-dark-grey: #e1e1e1;
-$middle-grey: #e5e5e5;
+$disabled-txt: rgb(110, 130, 150);
 $middle-light-grey: #efefef;
-$light-grey: #FDFAFA;
-$light-blue-grey: #e3effb;
-
-$light-green: #42b983;
-$old-utility-green: #0F870F; // was #0F870F
-$utility-green: #33a394; // was #0F870F
-
-$utility-red: $tsf-red; // was #e31837
-$utility-red-hover: $tsf-red-hover; // was #ba0414
-$utility-lightred: #ffe4dc; // was #ffebeb
-
-// colour map
-$colours: (
-  'navy-blue': $navy-blue,
-  'light-navy-blue': $light-navy-blue,
-  'electric-blue': $electric-blue,
-  'middle-blue': $middle-blue,
-  'light-blue': $light-blue,
-  'pale-blue': $pale-blue,
-  'orange': $orange,
-  'grey': $grey,
-  'dark-grey': $dark-grey,
-  'regular-grey': $regular-grey,
-  'middle-grey': $middle-grey,
-  'light-grey': $light-grey,
-  'utility-green': $utility-green,
-  'utility-red': $utility-red,
-  'white': $white,
-  'off-white': $off-white,
-  'black': $black,
-  'approved': $utility-green,
-  'pending': $grey,
-  'rejected': $utility-red,
-  'blue': $utility-blue,
-  'blue-hover': $utility-blue-hover,
-  'utility-blue': $utility-blue,
-  'utility-blue-hover': $utility-blue-hover
-);
 
 $breakpoints: (
   'xx-small': 300px, // 18.75rem
@@ -111,11 +34,5 @@ $margins: (
   '5': 8px,   // 0.5rem
 );
 
-$tsf-font: Poppins, Arial, Helvetica, sans-serif;
-$tsf-font-weight-bold: 700;
-$tsf-font-weight-normal: normal;
-$font-mt-bold: $tsf-font; // was 'NewsGothicMTStd-Bold'
-$font-mt: $tsf-font; // was 'NewsGothicMTStd'
-$font-brand: $tsf-font; // was Arial
-
-$screen-lg-min: 48rem;
+$font: Verdana, Arial, Helvetica, sans-serif;
+$font-mt: $font;

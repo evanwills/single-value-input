@@ -109,7 +109,8 @@ const optionalTxt = ref('');
  */
 const requiredTxt = ref(' (required)');
 
-const showDefault = computed(() => (typeof props.value !== 'string' || props.value.trim() === ''));
+const showDefault = computed(() => (typeof props.value !== 'string'
+  || props.value.trim() === ''));
 
 const getRequredTxt = computed(() => { // eslint-disable-line arrow-body-style
   return (props.requiredRev === true)
@@ -134,7 +135,7 @@ onBeforeMount(() => {
 
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import '../../../assets/scss/config';
 .placeholder-txt {
   color: $dark-grey;

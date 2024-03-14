@@ -1,55 +1,10 @@
 @import "./config";
-@import "./helpers";
-@import "./base";
-@import "./thinHeader";
-@import "./footer";
+
 // Components
-@import "./components/breadcrumb";
-@import "./components/button";
-@import "./components/tileComponent";
-@import "./components/ctaComponent";
-@import "./components/module4";
-@import "./components/module5";
-@import "./components/payment/paymentList";
-@import "./components/payment/paymentListItem";
-@import "./components/bank-details";
-@import "./components/modal";
-@import "./components/dropdown";
-@import "./components/childDetails/child-id-card";
-@import "./components/childDetails/child-details";
-@import "./components/childDetails/sponsor-list";
-@import "./components/typeahead";
-@import "./components/selectComponents";
-@import "./components/inputTextComponent";
-@import "./components/digital-access";
-@import "./components/changePassword";
-@import "./components/loaderOverlay";
-@import "./components/manualAddressForm";
-@import "./components/statusIndicator";
-@import "./components/documentUpload/upload-tile";
-@import "./components/documentUpload/document-upload-root";
-@import "./components/documentUpload/review-document";
-@import "./components/health-and-disability";
-@import "./components/shared-components/inputs-with-info";
 @import "./components/shared-components/whole-input-field";
 @import "./components/shared-components/radio-select-input";
 @import "./components/shared-components/auto-complete";
 @import "./components/shared-components/pretty-select";
-// Toy And Book
-@import "./components/toyAndBook/childList";
-@import "./components/toyAndBook/errorMessage";
-@import "./components/toyAndBook/toyandbook";
-@import "./components/summary/child-list-item-basic.scss";
-// Pages
-@import "./pages/myPayments";
-@import "./pages/myChildren";
-@import "./pages/myDetails";
-@import "./pages/contactUs";
-@import "./pages/documentUpload";
-@import "./pages/documentUpload.scss";
-@import "./pages/mySummary.scss";
-// Form wrapper
-@import "./components/formWrapper/form-wrapper-two-cols";
 
 html {
   margin: 0;
@@ -57,29 +12,4 @@ html {
 }
 body {
   margin: 0;
-}
-
-.msf-section {
-  width: 100%;
-  margin: 0 auto;
-  @include respond-to(small) {
-    max-width: calc(100% - 64px);
-  }
-  @include respond-to(large) {
-    max-width: 1092px;
-  }
-}
-
-.main {
-  width: 100%;
-  margin: 0 auto;
-  margin-top: 142px;
-  padding: 0px 16px;
-  box-sizing: border-box;
-  &.sticky-margin {
-    margin-top: 222px;
-  }
-  @include respond-to(small) {
-    padding: 0;
-  }
 }

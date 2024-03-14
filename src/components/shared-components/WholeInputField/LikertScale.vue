@@ -6,7 +6,7 @@
         <th
           v-for="option in options"
           :key="option.value"
-          :id="`${props.fieldId}--${option.value}`">{{ option.label }}</th>
+          :id="`${fieldId}--${option.value}`">{{ option.label }}</th>
       </tr>
     </thead>
     <tbody>
@@ -19,19 +19,22 @@
           :key="option.value">
           <input
             :aria-labelledby="`${q.labeledBy}--${option.value}`"
-            :checked="option.value === localValues[q.id]"
-            :data-quid="q.id"
-            :disabled="idDisabled"
-            :id="`${q.name}--${option.value}`"
+            :checked="isChecked(option, localValues, q)"
+            :data-fieldid="fieldId"
+            :data-qid="q.id"
+            :disabled="isDisabled"
+            :id="getRadioID(q, option)"
             :name="q.name"
             :readonly="isReadonly"
             :required="isRequired"
             :tabindex="tabindex"
             type="radio"
             :value="option.value"
+            v-on:blur="handleBlur($event)"
             v-on:change="handleChange($event)"
+            v-on:focus="handleFocus($event)"
             class="visually-hidden" />
-          <label class="radio-icon" :for="`${q.name}--${option.value}`">
+          <label class="radio-icon" :for="getRadioID(q, option)">
             {{ option.label }}
           </label>
         </td>
@@ -42,6 +45,13 @@
 
 <script setup>
 import { onBeforeMount, ref } from 'vue';
+import { getEpre } from '../../../utils/general-utils';
+import { multiFieldBlur } from '../../../utils/vue-utils';
+
+const componentName = 'likert-scale';
+
+// --------------------------------------------------
+// START: Data types
 
 /**
  * @typedef LikertOption
@@ -74,12 +84,29 @@ import { onBeforeMount, ref } from 'vue';
  * User values supplied by the server and sent back to the server
  *
  * @typedef LikertValue
- * @type {object}
- * @property {string} id    Server side key for the response
- * @property {string} value Human readable label for the question
+ * @type {{ [key: string]: string|number|null }} key/value pair where
+ *                              the key is the question ID and the
+ *                              value is the radio button value.
  */
 
-const emit = defineEmits(['blur', 'change', 'invalid']);
+/**
+ * Data object emited whan one of the question values changes.
+ *
+ * @typedef LikertEvent
+ * @type {object}
+ * @property {string}      fieldId ID of the field that generated the
+ *                                 event
+ * @property {LikertValue} values  Current values of all Likert Scale
+ *                                 inputs in this field
+ */
+
+//  END:  Data types
+// --------------------------------------------------
+
+const emit = defineEmits(['blur', 'change', 'lostfocus', 'invalid']);
+
+// --------------------------------------------------
+// START: Properties/attributes
 
 const props = defineProps({
   /**
@@ -151,13 +178,6 @@ const props = defineProps({
   tabindex: { type: Number, required: false, default: 0 },
 
   /**
-   * User selected values
-   *
-   * @property {LikertValue[]} values
-   */
-  values: { type: Object, required: false, default: null },
-
-  /**
    * If you are asking users to rank items in order of preference,
    * you may want them to be able to select each option only once
    * and want all the options to be used up.
@@ -198,7 +218,29 @@ const props = defineProps({
    * @property {boolean} uniqueTwoD
    */
   uniqueTwoD: { type: Boolean, required: false, default: false },
+
+  /**
+   * User selected values
+   *
+   * @property {LikertValue[]} values
+   */
+  values: { type: Object, required: false, default: null },
 });
+
+//  END:  Properties/attributes
+// --------------------------------------------------
+// START: Local state
+
+/**
+ * A list key/value pairs where the key is the question ID and the
+ * value is the user submitted or server supplied value for the
+ * question.
+ *
+ * @property {object} localValues
+ */
+const ePre = ref(null);
+
+const isBlured = ref(false);
 
 /**
  * A list key/value pairs where the key is the question ID and the
@@ -221,7 +263,7 @@ const localQs = ref([]);
  *
  * @property {string[]} hadFocus
  */
-const hadFocus = ref([]);
+const lostFocus = ref(false);
 
 /**
  * A list key/value pairs where the key is the question ID and the
@@ -231,12 +273,34 @@ const hadFocus = ref([]);
  */
 const invalidQs = ref({});
 const qIDs = ref([]);
+const timeoutID = ref(null);
 const validOptions = ref([]);
+
+//  END:  Local state
+// --------------------------------------------------
+// START: Computed properties
+
+//  END:  Computed properties
+// --------------------------------------------------
+// START: Local methods
+
+const getRadioID = (q, option) => `${q.name}--${option.value}`;
+
+/**
+ * Get a unique ID for a question.
+ *
+ * Used to check whether a `focusout` event is actually moving away
+ * from this group of questions.
+ *
+ * @param {string} qID
+ */
+const getLocalQId = (qID) => `${props.fieldId}--${qID}`;
 
 const hasEmptyValues = () => {
   const keys = Object.keys(localValues.value);
+
   for (let a = 0; a < keys.length; a += 1) {
-    if (localValues.value[keys[a]] === '') {
+    if (localValues.value[keys[a]] === '' || localValues.value[keys[a]] === null) {
       return true;
     }
   }
@@ -256,11 +320,17 @@ const hasInvalidValues = () => {
   return false;
 };
 
-const testInvalid = (forceTest = false) => {
+const isChecked = (option, _localValues, q) => { // eslint-disable-line arrow-body-style
+  return (option.value == _localValues[q.id]) // eslint-disable-line eqeqeq
+    ? 'checked'
+    : undefined;
+};
+
+const testInvalid = (forceTest = true) => {
   if (props.isRequired === true) {
     let output = false;
 
-    if (hadFocus.value.length === props.questions.length || forceTest === true) {
+    if (lostFocus.value === true || forceTest === true) {
       output = hasEmptyValues();
     }
 
@@ -274,71 +344,119 @@ const testInvalid = (forceTest = false) => {
   }
 };
 
-const setHadFocus = (id) => {
-  if (hadFocus.value.indexOf(id) === -1) {
-    // This one hasn't had focus before.
-    hadFocus.value.push(id);
-  }
-};
-
 const optionIsInvalid = (value) => (validOptions.value.indexOf(value) === -1);
+
+/**
+ * Check a blur event to see if the likert scale radio buttons have
+ * lost focus
+ *
+ * > __Note:__ This function uses settimeout() & clearTimeout() as a
+ * >           hack to prevent a flash of error message, when the
+ * >           user clicks on an option in one row of the Likert
+ * >           Scale input, then clicks on an option in a different
+ * >           row.
+ *
+ * @param {Event} event
+ */
+const handleBlur = (event) => {
+  isBlured.value = true;
+
+  if (typeof timeoutID.value === 'number') {
+    // In case we have multiple blurs in quick succession we'll
+    // clear the existing timeout
+    clearTimeout(timeoutID.value);
+  }
+
+  // We are using the set timeout to delay emit `invalid` to ensure
+  // that the user hasn't just switched between one Likert Scale row
+  // and another
+  timeoutID.value = setTimeout(
+    () => {
+      timeoutID.value = null;
+
+      if (isBlured.value === true) {
+        isBlured.value = false;
+        const { lost } = multiFieldBlur(
+          event,
+          props.fieldId,
+          emit,
+          testInvalid,
+          'radio',
+          6,
+        );
+
+        lostFocus.value = lost;
+      }
+    },
+    80,
+  );
+};
 
 const handleChange = (event) => {
   const { value } = event.target;
-  const qID = event.target.dataset.quid;
+  const qID = event.target.dataset.qid;
 
   if (optionIsInvalid(value) === true) {
-    throw new Error(
+    // eslint-disable-next-line no-console
+    console.error(
       'LikertScale.handleChange() received an invalid value: '
       + `"${value}"`,
     );
-  }
+    invalidQs.value[qID] = true;
+  } else {
+    // We have an expected value so let's keep going with
+    // the validation.
 
-  const tmp = { ...localValues.value };
+    const tmp = { ...localValues.value };
 
-  if (props.uniqueTwoD === true) {
-    // Make sure every option is only used once
+    if (props.uniqueTwoD === true) {
+      // Make sure every option is only used once
 
-    const keys = Object.keys(tmp);
+      const keys = Object.keys(tmp);
 
-    for (let a = 0; a < keys.length; a += 1) {
-      if (tmp[keys[a]] === value) {
-        if (tmp[keys[a]] !== '') {
-          invalidQs.value[keys[a]] = true;
+      for (let a = 0; a < keys.length; a += 1) {
+        if (tmp[keys[a]] === value) {
+          if (tmp[keys[a]] !== '') {
+            invalidQs.value[keys[a]] = true;
+          }
+
+          tmp[keys[a]] = '';
+          break;
         }
-
-        tmp[keys[a]] = '';
-        break;
       }
     }
+
+    tmp[qID] = value;
+    invalidQs.value[qID] = false;
+
+    localValues.value = tmp;
+
+    emit('change', {
+      fieldId: props.fieldId,
+      values: localValues.value,
+    });
+
+    testInvalid(false);
   }
-
-  setHadFocus(qID);
-
-  tmp[qID] = value;
-  invalidQs.value[qID] = false;
-
-  localValues.value = tmp;
-
-  emit('change', localValues.value);
-  testInvalid();
 };
 
-/**
- * Get a unique ID for a question.
- *
- * Used to check whether a `focusout` event is actually moving away
- * from this group of questions.
- *
- * @param {string} qID
- */
-const getLocalQId = (qID) => `${props.fieldId}--${qID}`;
+const handleFocus = () => {
+  isBlured.value = false;
+};
+
+//  END:  Local methods
+// --------------------------------------------------
+// START: Lifecycle methods
 
 onBeforeMount(() => {
+  if (ePre.value === null) {
+    ePre.value = getEpre(componentName, props.fieldId);
+  }
+
   if (qIDs.value.length === 0) {
     if (Array.isArray(props.questions) === false || props.questions.length === 0) {
       // throw new Error(
-      console.error(
+      console.error( // eslint-disable-line no-console
         'LikertScale component requires `question` attribute to be '
         + 'a non-empty array of objects containing a `id` property '
         + 'with a string value and a `label` property with a string '
@@ -346,13 +464,12 @@ onBeforeMount(() => {
       );
     } else {
       for (let a = 0; a < props.questions.length; a += 1) {
-        if (typeof props.question[a].id !== 'string'
-          || typeof props.question[a].label !== 'string'
+        if (typeof props.questions[a].id !== 'string'
+          || typeof props.questions[a].label !== 'string'
           || props.questions[a].id.trim() === ''
           || props.questions[a].label.trim() === ''
         ) {
-          // throw new Error(
-          console.error(
+          console.error( // eslint-disable-line no-console
             'LikertScale component requires each item in the '
             + '`question` array to have a non-empty string '
             + '`id` property AND a non-empty string `label`. '
@@ -387,7 +504,7 @@ onBeforeMount(() => {
       qIDs.value.push(getLocalQId(ID));
 
       if (typeof tmpValues[ID] !== 'undefined') {
-        const isEmpty = tmpValues[ID] !== '';
+        const isEmpty = tmpValues[ID] === '';
         localValues.value[ID] = tmpValues[ID];
 
         invalidQs.value[ID] = ((isEmpty === false && optionIsInvalid(tmpValues[ID]))
@@ -398,39 +515,50 @@ onBeforeMount(() => {
       }
     }
 
-    localQs.value = props.questions.map((question) => {
-      const rowID = `${props.fieldId}--${question.id}`;
+    if (props.questions !== null) {
+      localQs.value = props.questions.map((question) => {
+        const rowID = `${props.fieldId}--${question.id}`;
 
-      return {
-        ...question,
-        rowID,
-        name: `radio-${rowID}`,
-        labeledBy: `${labedBy} ${rowID} ${props.fieldId}--`,
-      };
-    });
+        return {
+          ...question,
+          rowID,
+          name: `radio-${rowID}`,
+          labeledBy: `${labedBy} ${rowID} ${props.fieldId}--`,
+        };
+      });
+    }
   }
 });
+
+//  END:  Lifecycle methods
+// --------------------------------------------------
 </script>
 
 <style lang="scss">
 @import '../../../assets/scss/config';
 // $white: #fff;
-// $tsf-bright-blue: #0021ea;
-// $tsf-field-borders: #8295ab;
+// $bright-blue: #0021ea;
+// $field-borders: #8295ab;
 
 .likert-scale {
-  border: 0.05rem solid #eee;
+  border: none;
   border-collapse: collapse;
+  margin-bottom: 1rem;
+  width: 100%;
 
   td, th {
-    border: 0.05rem solid #eee;
+    border: none;
     border-collapse: collapse;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.5rem;
+    text-align: center;
   }
 
   tbody {
     th {
+      font-weight: normal;
+      padding-left: 0;
       text-align: left;
+      // width: 100%;
     }
   }
 
@@ -444,7 +572,7 @@ onBeforeMount(() => {
       border-radius: 10rem;
 
       &:hover {
-        outline: 0.2rem solid $tsf-bright-blue;
+        outline: 0.2rem solid $bright-blue;
         outline-offset: 0.2rem;
         cursor: pointer;
       }
@@ -462,7 +590,7 @@ onBeforeMount(() => {
 
       &::before {
         background-color: $white;
-        border: 0.125rem solid $tsf-field-borders;
+        border: 0.125rem solid $field-borders;
         box-sizing: border-box;
         content: '';
         display: inline-block;
@@ -472,7 +600,7 @@ onBeforeMount(() => {
 
       &::after {
         display: inline-block;
-        background-color: $tsf-bright-blue;
+        background-color: $bright-blue;
         height: 0.75rem;
         opacity: 0;
         transition: opacity ease-in-out 0.3s;
@@ -486,7 +614,7 @@ onBeforeMount(() => {
 
     &:focus {
       + .radio-icon {
-        outline: 0.1rem solid $tsf-bright-blue;
+        outline: 0.1rem solid $bright-blue;
         outline-offset: 0.1rem;
       }
     }

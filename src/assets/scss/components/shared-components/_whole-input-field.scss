@@ -1,10 +1,8 @@
 @import '../../config';
-@import '../../helpers';
-@import '../../base';
 
 $border-rad: 0.3rem;
 
-.single-val-input {
+.whole-input {
   margin: 0;
   padding: 0;
   font-family: Poppins, Arial, Helvetica, sans-serif;
@@ -20,19 +18,19 @@ $border-rad: 0.3rem;
   }
 
   &__input-wrap {
-    border: 0.05rem solid $tsf-field-borders;
+    border: 0.05rem solid $field-borders;
     border-radius: $border-rad;
     display: inline-block;
     position: relative;
     width: 100%;
 
     &:focus-within {
-      outline: 0.125rem solid $tsf-bright-blue;
+      outline: 0.125rem solid $bright-blue;
       outline-offset: 0.063rem;
     }
 
     &--invalid {
-      border-color: $tsf-red;
+      border-color: $red;
 
       > ul {
         margin-bottom: 0.5rem !important;
@@ -54,7 +52,7 @@ $border-rad: 0.3rem;
     &--no-border {
       border: none;
 
-      .single-val-input {
+      .whole-input {
         &__error {
           border-top-left-radius: $border-rad;
           border-top-right-radius: $border-rad;
@@ -62,7 +60,7 @@ $border-rad: 0.3rem;
       }
     }
     &--password {
-      .single-val-input {
+      .whole-input {
         &__input {
           width: calc(100% - 2rem);
         }
@@ -77,7 +75,7 @@ $border-rad: 0.3rem;
     &--number {
       &::after {
         content: '';
-        border-left: 0.05rem solid $tsf-field-borders;
+        border-left: 0.05rem solid $field-borders;
         width: 0.05rem;
         position: absolute;
         border-radius: 0;
@@ -87,30 +85,30 @@ $border-rad: 0.3rem;
         transform: none;
       }
 
-      &.single-val-input__input-wrap--invalid {
+      &.whole-input__input-wrap--invalid {
         &::after {
-          border-color: $tsf-red;
+          border-color: $red;
           // right: 5.1rem;
         }
 
-        > .single-val-input__error-icon {
+        > .whole-input__error-icon {
           opacity: 0;
         }
       }
     }
 
     &--combobox {
-      .single-val-input__error-icon {
+      .whole-input__error-icon {
         top: 1.45rem;
       }
 
-      &.single-val-input__input-wrap--invalid {
+      &.whole-input__input-wrap--invalid {
         .autocomplete-input {
           padding-right: 4.5rem;
         }
 
-        .single-val-input__error-icon {
-          right: 2.25rem;
+        .whole-input__error-icon {
+          right: 2.5rem;
         }
       }
     }
@@ -132,7 +130,7 @@ $border-rad: 0.3rem;
   }
 
   &:first-child {
-    .single-val-input {
+    .whole-input {
       &__label {
         padding-top: 0;
       }
@@ -148,8 +146,8 @@ $border-rad: 0.3rem;
   }
 
   &__error {
-    background-color: $tsf-red;
-    border: 0.05rem solid $tsf-red;
+    background-color: $red;
+    border: 0.05rem solid $red;
     border-bottom-left-radius: $border-rad;
     border-bottom-right-radius: $border-rad;
     color: $white;
@@ -166,7 +164,7 @@ $border-rad: 0.3rem;
       color: $white;
 
       a {
-        color: $tsf-bright-blue;
+        color: $bright-blue;
       }
     }
 
@@ -180,7 +178,7 @@ $border-rad: 0.3rem;
     }
 
     &-icon {
-      background: $tsf-red;
+      background: $red;
       border-radius: 50rem;
       color: $white;
       display: inline-block;
@@ -203,7 +201,7 @@ $border-rad: 0.3rem;
         opacity: 1;
       }
 
-      &--checkable {
+      &--checkable, &--textarea {
         top: calc(50%);
       }
     }
@@ -232,7 +230,7 @@ $border-rad: 0.3rem;
     border-radius: $border-rad;
     box-sizing: border-box;
     display: block;
-    font-family: $tsf-font;
+    font-family: $font;
     width: 100%;
     color: $black;
     // padding: 0.6rem 0.8rem 0.5rem;
@@ -286,7 +284,7 @@ $border-rad: 0.3rem;
     }
 
     &--icon-post {
-      padding-right: 2.6rem;
+      padding-right: 3.9rem;
     }
 
     &--invalid {
@@ -317,7 +315,7 @@ $border-rad: 0.3rem;
 }
 
 .tsf-select {
-  + .single-val-input {
+  + .whole-input {
     &__error {
       &-icon {
         right: 3.1rem;
@@ -327,7 +325,7 @@ $border-rad: 0.3rem;
   }
 
   &--error {
-    + .single-val-input__error-icon {
+    + .whole-input__error-icon {
       display: none;
     }
   }
@@ -357,8 +355,9 @@ $border-rad: 0.3rem;
 
   &--post {
     line-height: 1.5rem;
-    right: 0.5rem;
+    right: 1.05rem;
     top: 50%;
+    text-align: center;
     transform: translateY(-50%);
   }
 }

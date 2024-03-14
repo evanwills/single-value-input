@@ -1,108 +1,34 @@
 /**
- * Check whether the data supplied infers it represents a child user
+ * This file contains a collection of "pure" function that help with
+ * testing and modifying data from the server.
  *
- * Look through the properties of the supplied object and check if it
- * has `SchoolName`, if so assume it represents a child user.
+ * Each function is exported so it can be easily unit tested.
  *
- * @param {object} data user data object
- *
- * @returns {boolean} TRUE if data is assumed to represent a child.
- *                    FALSE otherwise
+ * @file data-utils.js
+ * @author Evan Wills <evan.wills@thesmithfamily.com.au>
  */
-export const isChild = (data) => (typeof data.SchoolName === 'string');
-
-
-export const mergeData = (oldData, newData) => {
-  const keys = Object.keys(newData);
-  const output = { ...oldData };
-
-  for (let a = 0; a < keys.length; a += 1) {
-    if (typeof output[keys[a]] !== 'undefined') {
-      output[keys[a]] = newData[keys[a]];
-    } else {
-      throw new Error(`${keys[a]} is not a property in oldData`);
-    }
-  }
-
-  return output;
-};
-
-export const updateObject = (object, updates) => {
-  const result = {};
-
-  Object.keys(object)
-    .forEach((key) => {
-      if (updates[key] !== null) {
-        result[key] = (key in updates)
-          ? updates[key]
-          : object[key];
-      } else {
-        result[key] = object[key];
-      }
-    });
-
-  return result;
-}
 
 /**
- * Merge user updated data into original data received from the
- * server so updates can be returned to the server.
+ * Check whether a value is empty or null
  *
- * @param {object} oldData Original object to be updated
- * @param {object} newData New data to be merged into old data
- *                         before being sent to server
- * @param {string} dataKey Key for nested data (if appropriate);
+ * @param {any} input value to be tested
  *
- * @returns {object} Deep clone of old data with new data merged in
+ * @returns {boolean} TRUE if input is undefined, NULL or empty string
  */
-export const updateObjectNew = (oldData, newData, dataKey = '') => {
-  // Deep copy source object
-  const output = JSON.parse(JSON.stringify(oldData));
+export const emptyOrNull = (input) => {
+  const t = typeof input;
 
-  let _dataKey = (typeof dataKey === 'undefined' || dataKey === null)
-    ? ''
-    : dataKey;
-
-  if (typeof _dataKey !== 'string') {
-    throw new Error(
-      'utils.updateObject() expects third parameter `dataKey` '
-      + 'to be a string',
-    );
-  }
-
-  _dataKey = _dataKey.trim();
-
-  if (_dataKey !== '') {
-    if (typeof output[_dataKey] !== 'object') {
-      throw new Error(
-        `utils.updateObject() expects third parameter "${_dataKey}" `
-        + 'to be a property name for the object to be updated.',
-      );
-    }
-
-    output[_dataKey] = mergeData(output[_dataKey], newData);
-
-    return output;
-  }
-
-  return mergeData(output, newData);
+  return (t === 'undefined' || input === null || input === 0
+    || (t === 'string' && input.trim() === ''));
 };
 
-export const arrayRemoveValue = (arr, value) => arr.filter((el) => el !== value);
-
-export const isValidFileType = (file) => {
-  const allwedTypes = [
-    'image/png',
-    'image/jpeg',
-    'image/webp',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ];
-
-  const tmpType = (typeof file.type === 'string')
-    ? file.type.trim()
-    : '';
-
-  return (tmpType !== '' && allwedTypes.indexOf(tmpType) > -1);
-}
+/**
+ * Check whether the input is a plain JavaScript object.
+ *
+ * @param {unknown} input A value that may be an object
+ *
+ * @returns {boolean} TRUE if the input is an object (and not NULL
+ *                    and not an array).
+ *                    FALSE otherwise
+ */
+export const isObj = (input) => (Object.prototype.toString.call(input) === '[object Object]');

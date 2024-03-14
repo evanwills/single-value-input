@@ -5,7 +5,7 @@
  * messages and icons for validating a commonly used input field
  * (e.g. mobile phone number).
  *
- * They are intended for use by the `SingleValueInput` component
+ * They are intended for use by the `WholeInputField` component
 */
 
 /**
@@ -27,6 +27,8 @@ const sanitiseAustPhone = (input) => input.replace(/[^0-9]+/gs, '').substring(0,
  * @returns {string} clean phone number value
  */
 const sanitisePostCode = (input) => input.replace(/[^0-9]+/gs, '').substring(0, 4);
+
+const sanitiseAddrLine = (input) => input.replace(/[^\-a-zA-Z0-9 ,.()/']+/, '');
 
 /**
  * Sanitise any positive number
@@ -78,6 +80,9 @@ const errTxt = {
   postcodestreet: '',
   postcode: `${errPre}Australian post code`,
   name: 'Please enter a name',
+  password: 'The password entered doesn\'t meet the requirements. '
+    + 'Please ensure it is a minimum of 8 characters and includes '
+    + 'an uppercase letter, a number and a special character.',
 };
 
 /**
@@ -93,31 +98,44 @@ const errTxt = {
  * @var {Object<RegExp>}
  */
 const regex = {
+  // eslint-disable-next-line no-useless-escape
+  addrLine: /^[\-a-zA-Z0-9 ,.()/']+$/,
   anyphone: /^0[234578][0-9]{8}$/,
   fixedphone: /^0[2378][0-9]{8}$/,
   mobilephone: /^0[45][0-9]{8}$/,
   intphone: /^\+[0-9]{8-14}$/,
-  email: /^[a-z0-9_\.'\-]+@[a-z0-9\-]+(?:\.[a-z0-9-]+)*(?:\.[a-z]+){1,2}$/, // eslint-disable-line
+  // eslint-disable-next-line no-useless-escape
+  email: /^[a-z0-9]+[\-a-z0-9_.']*@[\-a-z0-9]+(?:\.[\-a-z0-9]+)*(?:\.[a-z]+){1,2}$/,
   postcode: /^0[289][0-9]{2}|[1-9][0-9]{3}$/,
-  name: /^[a-zA-Z \-\.']+$/, // eslint-disable-line
-  title: /^[a-zA-Z0-9 ,\.\&\?:!\(\)<>\/'\-]+$/, // eslint-disable-line
+  // eslint-disable-next-line no-useless-escape
+  name: /^[\-a-zA-Z .']+$/,
+  // eslint-disable-next-line no-useless-escape
+  title: /^[\-a-zA-Z0-9 ,.&?:!()<>/']+$/,
+  // eslint-disable-next-line no-useless-escape
+  password: /^[\-a-zA-Z0-9`~!@#$%^&*()_+{}|:";'<>?,./\\[\]]{8,64}$/,
 };
 
-const passwordValidation = (input) => {
-  const uc = /[A-Z]/;
-  const num = /[0-9]/;
-  const spec = /[- `~!@#$%^&*()_+={}[\]|\\:";'<>?,./]/;
-
-  return (input.length < 8 || !input.match(uc) || !input.match(num) || !input.match(spec))
-    ? 'The password entered doesn\'t meet the requirements. '
-      + 'Please ensure it is a minimum of 8 characters and includes '
-      + 'an uppercase letter, a number and a special character.'
-    : '';
+const reg2pat = (_regex) => {
+  const output = _regex.toString().replace(/^\/\^|\$\/$/g, '');
+  return output;
+  // return _regex.toString().replace(/^\/\^|\$\/$/g, '');
 };
 
+/**
+ * Object containing validation for different types of input field
+ */
 export default {
+  addressline: {
+    pattern: reg2pat(regex.addrLine),
+    placeholder: 'e.g. 123 Smith Street',
+    error: '',
+    validate: null,
+    sanitise: sanitiseAddrLine,
+    preIcon: '',
+    postIcon: '',
+  },
   anyphone: {
-    pattern: regex.anyphone,
+    pattern: reg2pat(regex.anyphone),
     placeholder: 'e.g. 0291234567',
     error: errTxt.anyphone,
     validate: (input) => (input.match(regex.anyphone) ? '' : errTxt.anyphone),
@@ -127,7 +145,7 @@ export default {
   },
 
   fixedphone: {
-    pattern: regex.fixedphone,
+    pattern: reg2pat(regex.fixedphone),
     placeholder: 'e.g. 0291234567',
     error: errTxt.fixedphone,
     validate: (input) => (input.match(regex.fixedphone) ? '' : errTxt.fixedphone),
@@ -137,7 +155,7 @@ export default {
   },
 
   mobilephone: {
-    pattern: regex.mobilephone,
+    pattern: reg2pat(regex.mobilephone),
     placeholder: 'e.g. 0412345678',
     error: errTxt.mobilephone,
     validate: (input) => (input.match(regex.mobilephone) ? '' : errTxt.mobilephone),
@@ -147,17 +165,17 @@ export default {
   },
 
   intphone: {
-    pattern: regex.intphone,
+    pattern: reg2pat(regex.intphone),
     placeholder: 'e.g. +61291234567',
     error: errTxt.intphone,
     validate: (input) => (input.match(regex.intphone) ? '' : errTxt.intphone),
-    sanitise: (input) => (input.replace(/[^+0-9]+/g, '').replace(/(?<=.)\+/g, '').substring(0, 15)),
+    sanitise: (input) => (input.replace(/[^+0-9]+/g, '').replace(/([^+]+)\+/g, '$1').substring(0, 15)),
     preIcon: '',
     postIcon: '',
   },
 
   email: {
-    pattern: regex.email, // eslint-disable-line
+    pattern: reg2pat(regex.email), // eslint-disable-line
     placeholder: 'e.g. robbie@example.com',
     error: errTxt.email,
     validate: (email) => {
@@ -197,7 +215,7 @@ export default {
   },
 
   postcodepobox: {
-    pattern: regex.postcode,
+    pattern: reg2pat(regex.postcode),
     placeholder: '',
     error: errTxt.postcode,
     validate: null,
@@ -207,7 +225,7 @@ export default {
   },
 
   postcodestreet: {
-    pattern: regex.postcode,
+    pattern: reg2pat(regex.postcode),
     placeholder: 'e.g. 2001',
     error: errTxt.postcode,
     validate: null,
@@ -217,7 +235,7 @@ export default {
   },
 
   postcode: {
-    pattern: regex.postcode,
+    pattern: reg2pat(regex.postcode),
     placeholder: 'e.g. 2001',
     error: errTxt.postcode,
     validate: null,
@@ -227,17 +245,17 @@ export default {
   },
 
   name: {
-    pattern: regex.name, // eslint-disable-line
+    pattern: reg2pat(regex.name), // eslint-disable-line
     placeholder: 'e.g. Dale',
     error: errTxt.name,
     validate: null,
-    sanitise: (input) => (input.replace(/[^a-zA-Z .'-]+/ig, ' ').replace(/([- .'])\1+/g, '$1').replace(/(?<=[- .']{3})[- .']+/g, '')),
+    sanitise: (input) => (input.replace(/[^a-zA-Z .'-]+/ig, ' ').replace(/([- .'])\1+/g, '$1').replace(/([- .']{3})[- .']+/g, '$1')),
     preIcon: '',
     postIcon: '',
   },
 
   title: {
-    pattern: regex.title, // eslint-disable-line
+    pattern: reg2pat(regex.title), // eslint-disable-line
     placeholder: '',
     error: '',
     validate: null,
@@ -247,7 +265,7 @@ export default {
   },
 
   url: {
-    pattern: '^https?://[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*(?:\.[a-z]+){1,2}', // eslint-disable-line
+    pattern: 'https?://[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*(?:\.[a-z]+){1,2}', // eslint-disable-line
     placeholder: 'e.g. https://google.com',
     error: `${errPre}website address (URL)`,
     validate: null,
@@ -257,24 +275,16 @@ export default {
   },
 
   money: {
-    pattern: '^[0-9]{7}(?:\.[0-9]{2})?$', // eslint-disable-line
+    pattern: '[0-9]{7}(?:\.[0-9]{2})?', // eslint-disable-line
     placeholder: 'e.g. 89.37',
     error: `${errPre}dollar amount`,
     validate: null,
     sanitise: (input) => sanitiseNumber(
-      input, [/^.*([0-9]{1,7}(?:\.[0-9]{2})?).*$/], 10,
+      input,
+      [/^.*([0-9]{1,7}(?:\.[0-9]{2})?).*$/],
+      10,
     ),
     preIcon: 'attach_money',
-    postIcon: '',
-  },
-
-  password: {
-    pattern: '',
-    placeholder: '',
-    error: '',
-    validate: passwordValidation,
-    sanitise: null,
-    preIcon: '',
     postIcon: '',
   },
 
@@ -284,14 +294,33 @@ export default {
    * @property {object}
    */
   percent: {
-    pattern: '^[0-9]{1,3}(?:\.[0-9]{1,3})?$', // eslint-disable-line
+    pattern: '[0-9]{1,3}(?:\.[0-9]{1,3})?', // eslint-disable-line
     placeholder: 'e.g. 89.37',
     error: `${errPre}percentage`,
     validate: null,
     sanitise: (input) => sanitiseNumber(
-      input, [/^.*?([0-9]{1,3}(?:\.[0-9]{1,3})?).*$/], 7,
+      input,
+      [/^.*?([0-9]{1,3}(?:\.[0-9]{1,3})?).*$/],
+      7,
     ),
     preIcon: '',
     postIcon: 'percent',
+  },
+
+  password: {
+    error: errTxt.password,
+    pattern: reg2pat(regex.password),
+    placeholder: '',
+    postIcon: '',
+    preIcon: '',
+    sanitise: null,
+    validate: (input) => { // eslint-disable-line arrow-body-style
+      return (input.match(regex.password) === null
+        || input.match(/[A-Z]+/) === null
+        || input.match(/[0-9]+/) === null
+        || input.match(/[`~!@#$%^&*()\-=_+/[\]\\{}|;':",./<>?]/) === null)
+        ? errTxt.password
+        : '';
+    },
   },
 };

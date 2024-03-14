@@ -16,7 +16,7 @@
         type="checkbox"
         :value="option.value"
         v-on:change="checkboxChange($event)"
-        v-on:blur="checkboxChange($event)" />
+        v-on:blur="handleBlur($event)" />
       <label :for="option.id" :class="checkboxClass">{{ option.label }}</label>
     </li>
   </ul>
@@ -32,6 +32,7 @@ import {
 } from 'vue';
 import { normaliseOptions, setOptionIDs } from './radio-select.utils';
 import { getEpre } from '../../../utils/general-utils';
+import { multiFieldBlur } from '../../../utils/vue-utils';
 
 // --------------------------------------------------
 // START: Emitted events
@@ -43,6 +44,7 @@ const emit = defineEmits([
   'focus',
   'invalid',
   'keyup',
+  'lostfocus',
   'maxedout',
 ]);
 
@@ -143,6 +145,14 @@ const props = defineProps({
   minLength: { required: false, default: -1 },
 
   /**
+   * If data from the server has null values for each checkbox item,
+   * Make null options FALSE after the first checkbox is checked
+   *
+   * @property {boolean} nullToFalse
+   */
+  nullToFalse: { type: Boolean, required: false, default: false },
+
+  /**
    * List of checkbox fields to be rendered
    *
    * @property {<{value: string, label: string, default: boolean, disabled: boolean}>[]} options
@@ -225,6 +235,11 @@ const minChecked = ref(0);
  * @property {number}
  */
 const maxChecked = ref(-1);
+
+/**
+ * Whether or not NULL values have been converted to false
+ */
+const noNull = ref(false);
 
 /**
  * List of options to be rendered
@@ -313,6 +328,16 @@ const validateOptions = () => {
 };
 
 /**
+ * Check a blur event to see if the likert scale radio buttons have
+ * lost focus
+ *
+ * @param {Event} event
+ */
+const handleBlur = (event) => {
+  multiFieldBlur(event, props.fieldId, emit, validateOptions, 'checkbox');
+};
+
+/**
  * Handle changes to radio or select input fields
  *
  * @param {Event} e
@@ -320,13 +345,25 @@ const validateOptions = () => {
 const checkboxChange = (e) => {
   const key = e.target.value;
 
-  if (typeof current.value[key] !== 'boolean') {
+  if (typeof current.value[key] !== 'boolean' && current.value[key] !== null) {
     throw new Error(
       `${ePre.value('checkboxChange')} cannot set current value for "${key}"`,
     );
   }
 
   current.value[key] = (e.target.checked === true);
+
+  if (props.nullToFalse === true && noNull.value === false) {
+    // Loop through options and make anything that is null false
+    noNull.value = true;
+    const keys = Object.keys(current.value);
+
+    for (let a = 0; a < keys.length; a += 1) {
+      if (current.value[keys[a]] === null) {
+        current.value[keys[a]] = false;
+      }
+    }
+  }
 
   validateOptions();
 
@@ -378,8 +415,6 @@ onBeforeMount(() => {
 
   if (typeof props.maxLength !== 'undefined' && props.maxLength !== null && props.maxLength > -1) {
     maxChecked.value = parseInt(props.maxLength, 10);
-
-    console.log('maxChecked:', maxChecked.value);
 
     if (Number.isNaN(maxChecked.value) || maxChecked.value < 0) {
       console.error( // eslint-disable-line no-console

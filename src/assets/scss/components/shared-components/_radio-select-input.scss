@@ -19,7 +19,7 @@
   }
 
   &--required {
-    border-color: $tsf-red;
+    border-color: $red;
   }
   select:disabled {
     // background-color: $middle-light-grey;
@@ -37,7 +37,7 @@
     bottom: 0;
     right: 3rem;
     height: 100%;
-    border-left: 0.05rem solid $tsf-field-borders;
+    border-left: 0.05rem solid $field-borders;
   }
 
   &::after {
@@ -69,12 +69,12 @@
     border-bottom-right-radius: 0;
 
     &::before {
-      border-color: $tsf-red;
+      border-color: $red;
     }
   }
 
   &--required {
-    border-color: $tsf-red;
+    border-color: $red;
   }
 
   > select {
@@ -156,7 +156,7 @@ ul.checkable-group {
     text-align: left;
 
     &:focus-within {
-      outline: 0.125rem solid $tsf-bright-blue;
+      outline: 0.125rem solid $bright-blue;
       outline-offset: 0.063rem;
     }
   }
@@ -171,7 +171,7 @@ ul.checkable-group {
 
   input:focus + .checkable-group__label {
     &--empty {
-      outline: 0.1rem solid $tsf-bright-blue;
+      outline: 0.1rem solid $bright-blue;
       outline-offset: 0.1rem;
     }
   }
@@ -187,7 +187,7 @@ ul.checkable-group {
       cursor: pointer;
 
       &:before {
-        border-color: $tsf-bright-blue;
+        border-color: $bright-blue;
       }
     }
 
@@ -201,7 +201,7 @@ ul.checkable-group {
 
     &::before {
       background-color: $white;
-      border: 0.125rem solid $tsf-field-borders;
+      border: 0.125rem solid $field-borders;
       box-sizing: border-box;
       content: '';
       display: inline-block;
@@ -223,15 +223,15 @@ ul.checkable-group {
       }
 
       &::after {
-        background-color: $tsf-bright-blue;
+        background-color: $bright-blue;
         border-radius: 10rem;
       }
     }
 
     &--checkbox {
       &::after {
-        border-left: 0.2rem solid $tsf-bright-blue;
-        border-bottom: 0.2rem solid $tsf-bright-blue;
+        border-left: 0.2rem solid $bright-blue;
+        border-bottom: 0.2rem solid $bright-blue;
         display: inline-block;
         height: 0.25rem;
         top: 0.95rem;
@@ -245,7 +245,7 @@ ul.checkable-group {
   input {
     &:focus {
       &:before {
-        border-color: $tsf-bright-blue;
+        border-color: $bright-blue;
       }
     }
 
@@ -263,7 +263,7 @@ ul.checkable-group {
 
         &:hover {
           &:before {
-            border-color: $tsf-field-borders;
+            border-color: $field-borders;
           }
         }
       }
@@ -271,7 +271,7 @@ ul.checkable-group {
       &:focus {
         + .checkable-group__label {
           &:before {
-            border-color: $tsf-field-borders;
+            border-color: $field-borders;
           }
         }
       }

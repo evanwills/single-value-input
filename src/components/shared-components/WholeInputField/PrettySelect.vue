@@ -7,17 +7,16 @@
       :aria-labelledby="fieldId"
       :class="btnClass"
       :disabled="isDisabled"
+      :id="`${fieldId}--btn`"
       :readonly="isReadonly"
       :key="btnClass"
       ref="vueSelectOpen"
       role="combobox"
       :tabindex="tabIndex"
       type="button"
+      v-on:blur="handleBlur"
       v-on:click="btnClick"
-      v-on:keyup.down="selectNext"
-      v-on:keyup.left="selectPrevious"
-      v-on:keyup.right="selectNext"
-      v-on:keyup.up="selectPrevious">
+      v-on:keyup="handleKeyUp($event)">
       <span
         v-if="unsafeLabels === true"
         v-html="current.label"
@@ -48,9 +47,7 @@
           :value="option.value"
           v-on:change="optionChange($event)"
           v-on:click="optionSelected($event)"
-          v-on:keyup.enter="optionSelected($event)"
-          v-on:keyup.esc="closeClick()"
-          v-on:keyup.space="optionSelected($event)" />
+          v-on:keyup="handleKeyUp($event)" />
         <label
           class="vue-select__label vue-select__opt-wrap"
           :for="radioID(index)">
@@ -66,7 +63,9 @@
     </ul>
 
     <button
+      v-on:blur="handleBlur"
       class="vue-select__close"
+      :id="`${fieldId}--btn`"
       :tabindex="childTabIndex"
       type="button"
       v-on:click="closeClick()"
@@ -83,11 +82,13 @@ import {
 } from 'vue';
 import { disabledOption, normaliseOptions, removeEmptyFilter } from './radio-select.utils';
 import { getEpre } from '../../../utils/general-utils';
+import { multiFieldBlur } from '../../../utils/vue-utils';
+import { emptyOrNull } from '../../../utils/data-utils';
 
 // --------------------------------------------------
 // START: Emitted events
 
-const emit = defineEmits(['blur', 'change', 'closed', 'invalid']);
+const emit = defineEmits(['blur', 'change', 'closed', 'invalid', 'lostfocus']);
 
 //  END:  Emitted events
 // --------------------------------------------------
@@ -178,9 +179,17 @@ const props = defineProps({
   /**
    * Whether or not this field is required.
    *
-   * @property {boolean} required
+   * @property {boolean} isRequired
    */
   isRequired: { type: Boolean, required: false, default: false },
+
+  /**
+   * When the up or down arrow are pressed in conjunction with the
+   * Ctrlkey, the selected option is moved by props.jump instead of one
+   *
+   * @property {number}
+   */
+  jump: { type: Number, required: false, default: 5 },
 
   /**
    * Whether or not to loop the currently selected option when using
@@ -322,6 +331,10 @@ const useEmpty = ref(false);
  */
 const emptyRemoved = ref(false);
 
+const filteredOptions = ref([]);
+
+const tmpFilter = ref('');
+
 /**
  * The wrapping UL tag for the options list
  *
@@ -341,6 +354,7 @@ const vueSelectList = ref(null);
  * @var {HTMLButtonElement}
  */
 const vueSelectOpen = ref(null);
+const timeoutID = ref(null);
 
 //  END:  Local state
 // --------------------------------------------------
@@ -497,9 +511,17 @@ const emitChange = (type = 'change') => {
   if (unusable.value === false) {
     emit(
       type,
-      (props.fullOption === true)
-        ? current.value
-        : current.value.value,
+      {
+        target: {
+          id: props.fieldId,
+          tagName: 'SELECT',
+          validity: { valid: (current.value.value !== '') },
+          value: (props.fullOption === true)
+            ? current.value
+            : current.value.value,
+        },
+        type,
+      },
     );
     emit('invalid', isInvalid());
   }
@@ -542,18 +564,21 @@ const removeEmpty = () => {
  * @returns {void}
  */
 const setCurrentValue = (value) => {
+  let ok = false;
   for (let a = 0; a < usableOptions.value.length; a += 1) {
     if (usableOptions.value[a].value === value) {
       current.value = usableOptions.value[a];
       currentIndex.value = a;
       removeEmpty();
-
-      return;
+      ok = true;
+      break;
     }
   }
 
-  currentIndex.value = 0;
-  current.value = null;
+  if (ok === false) {
+    currentIndex.value = 0;
+    current.value = null;
+  }
 };
 
 /**
@@ -571,6 +596,26 @@ const setSelected = () => {
   }
 };
 
+// /**
+//  * Update the current value and current index after the left or up
+//  * arrow key has been pressed (and released) from within the main
+//  * button so that the new seleted option is the previous option in
+//  * the list.
+//  *
+//  * @returns {void}
+//  */
+// const selectPrevious = () => {
+//   if (unusable.value === false) {
+//     if (currentIndex.value > 0) {
+//       currentIndex.value -= 1;
+//     } else if (props.loop === true) {
+//       currentIndex.value = maxIndex.value;
+//     }
+
+//     setSelected();
+//   }
+// };
+
 /**
  * Update the current value and current index after the left or up
  * arrow key has been pressed (and released) from within the main
@@ -579,17 +624,42 @@ const setSelected = () => {
  *
  * @returns {void}
  */
-const selectPrevious = () => {
+const selectPreviousNew = (event) => { // eslint-disable-line no-unused-vars
   if (unusable.value === false) {
-    if (currentIndex.value > 0) {
-      currentIndex.value -= 1;
+    const step = (event.ctrlKey === true)
+      ? props.jump
+      : 1;
+
+    const tmp = currentIndex.value - step;
+
+    if (tmp >= 0) {
+      currentIndex.value = tmp;
     } else if (props.loop === true) {
-      currentIndex.value = maxIndex.value;
+      currentIndex.value = maxIndex.value + tmp;
     }
 
     setSelected();
   }
 };
+
+// /**
+//  * Update the current value and current index after the right or down
+//  * arrow key has been pressed (and released) from within the main
+//  * button so that the new seleted option is the next option in the list.
+//  *
+//  * @returns {void}
+//  */
+// const selectNext = () => {
+//   if (unusable.value === false) {
+//     if (currentIndex.value < maxIndex.value) {
+//       currentIndex.value += 1;
+//     } else if (props.loop === true) {
+//       currentIndex.value = 0;
+//     }
+
+//     setSelected();
+//   }
+// };
 
 /**
  * Update the current value and current index after the right or down
@@ -598,12 +668,18 @@ const selectPrevious = () => {
  *
  * @returns {void}
  */
-const selectNext = () => {
+const selectNextNew = (event) => { // eslint-disable-line no-unused-vars
   if (unusable.value === false) {
-    if (currentIndex.value < maxIndex.value) {
-      currentIndex.value += 1;
+    const step = (event.ctrlKey === true)
+      ? props.jump
+      : 1;
+
+    const tmp = currentIndex.value + step;
+
+    if (tmp <= maxIndex.value) {
+      currentIndex.value = tmp;
     } else if (props.loop === true) {
-      currentIndex.value = 0;
+      currentIndex.value = tmp - maxIndex.value - 1;
     }
 
     setSelected();
@@ -611,18 +687,35 @@ const selectNext = () => {
 };
 
 /**
- * Handle radio button input change event
+ * Check if option matches filter string
  *
- * @param {Event} event
+ * @param {{label: string, value: string}} option Option to be
+ *                       checked
+ * @param {string} str   Filter string to match against options
+ * @param {number} l     Length of filter string
  *
- * @returns {void}
+ * @returns {number} 3 if exact match was found
+ *                   2 if matched from start of value or label
+ *                   1 if matched anywhere in valur or label
+ *                   0 if no match was found.
  */
-const optionChange = (event) => {
-  if (unusable.value === false) {
-    setCurrentValue(event.target.value);
+const optionMatched = (option, str, l) => {
+  const _val = option.value.toLowerCase();
+  const _lab = option.label.toLowerCase();
 
-    emitChange();
+  if (_val === str || _lab === str) {
+    return 3;
   }
+
+  if (_val.substring(0, l) === str || _lab.substring(0, l) === str) {
+    return 2;
+  }
+
+  if (_val.includes(str) || _lab.includes(str)) {
+    return 1;
+  }
+
+  return 0;
 };
 
 /**
@@ -648,6 +741,129 @@ const optionSelected = (event) => {
 };
 
 /**
+ * Updates the currently selected option based on the temporary
+ * filter the user has entered.
+ *
+ * @returns {boolean} TRUE if an option was matched, FALSE otherwise.
+ */
+const setFirstMatchedOption = () => {
+  const l = tmpFilter.value.length;
+
+  if (l > 0) {
+    let starts = null;
+    let inc = null;
+    for (let a = 0; a < usableOptions.value.length; a += 1) {
+      const opt = usableOptions.value[a];
+      const match = optionMatched(opt, tmpFilter.value, l);
+
+      switch (match) { // eslint-disable-line default-case
+        case 3:
+          // We have an exact match so no need to do anything more
+          optionSelected({ target: { value: opt.value } });
+          return true;
+
+        case 2:
+          if (starts === null) {
+            starts = opt.value;
+          }
+          break;
+
+        case 1:
+          if (inc === null) {
+            inc = opt.value;
+          }
+      }
+    }
+
+    if (starts !== null) {
+      // Found a option where filter matches start of value
+      optionSelected({ target: { value: starts } });
+      return true;
+    }
+
+    if (inc !== null) {
+      // Found a option where filter matches some part of value
+      optionSelected({ target: { value: inc } });
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const setFilter = (key) => {
+  if (key.match(/^[a-z0-9 -~`!@#$%^&*()-=_+{}|[\]:";'<>/?,. ]$/i)) {
+    tmpFilter.value += key.toLowerCase();
+
+    setFirstMatchedOption();
+
+    if (timeoutID.value !== null) {
+      clearTimeout(timeoutID.value);
+    }
+
+    if (tmpFilter.value !== '') {
+      timeoutID.value = setTimeout(() => {
+        tmpFilter.value = '';
+        timeoutID.value = null;
+      }, 1000);
+    }
+  }
+};
+
+const handleKeyUp = (event) => {
+  const { key } = event;
+  // const l = 0;
+
+  switch (key) {
+    case 'Up': // IE/Edge
+    case 'ArrowUp':
+    case 'ArrowLeft':
+      selectPreviousNew(event);
+      // selectPrevious(event);
+      break;
+
+    case 'Down': // IE/Edge
+    case 'ArrowDown':
+    case 'ArrowRight':
+      selectNextNew(event);
+      // selectNext(event);
+      break;
+
+    case 'Enter':
+    case 'Space':
+      optionSelected(event);
+      break;
+
+    case 'Esc':
+    case 'Escape':
+      closeClick();
+      break;
+
+    default:
+      setFilter(key, event);
+  }
+};
+
+/**
+ * Handle radio button input change event
+ *
+ * @param {Event} event
+ *
+ * @returns {void}
+ */
+const optionChange = (event) => {
+  if (unusable.value === false) {
+    setCurrentValue(event.target.value);
+
+    emitChange();
+  }
+};
+
+const testInvalid = () => {
+  emit('invalid', isInvalid());
+};
+
+/**
  * Make option list usable for <SELECT> and/or <INPUT type="radio" />
  *
  * Normalise key/value pairs
@@ -668,6 +884,11 @@ const setUsableOptions = () => {
 
   // Give each radio option a unique ID
   usableOptions.value = options;
+  filteredOptions.value = [...usableOptions.value];
+};
+
+const handleBlur = (event) => {
+  multiFieldBlur(event, props.fieldId, emit, testInvalid, 'radio', 0, ['BUTTON', 'INPUT']);
 };
 
 //  END:  Local methods
@@ -675,9 +896,11 @@ const setUsableOptions = () => {
 // START: Lifecycle methods
 
 onBeforeMount(() => {
-  useEmpty.value = (props.noNonEmpty === false || props.value === '');
-  usableOptions.value = props.options;
   ePre.value = getEpre('pretty-select', props.fieldId);
+
+  useEmpty.value = (props.noNonEmpty === false || emptyOrNull(props.value));
+  usableOptions.value = props.options;
+  filteredOptions.value = props.options;
 
   setUsableOptions();
   removeEmpty();
